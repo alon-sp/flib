@@ -2,24 +2,20 @@
 #include"../fl.h"
 #include"flArray.h"
 
-inline static void _flarrSetLength(flArray* arr, flInt_t length){
-    flInt_t* arrLenPtr = (flInt_t*)(&arr->length);
-    *arrLenPtr = length;
+inline static void _flarrSetLength(flArray* arr, flInt_t _length){
+    *( (flInt_t*)(&arr->length) ) = _length;
 }
 
-inline static void _flarrSetCapacity(flArray* arr, flInt_t capacity){
-    flInt_t* arrCapPtr = (flInt_t*)(&arr->capacity);
-    *arrCapPtr = capacity;
+inline static void _flarrSetCapacity(flArray* arr, flInt_t _capacity){
+    *( (flInt_t*)(&arr->capacity) ) = _capacity;
 }
 
-inline static void _flarrSetElemSize(flArray* arr, flInt_t elemSize){
-    flInt_t* arrElemSizePtr = (flInt_t*)(&arr->elemSize);
-    *arrElemSizePtr = elemSize;
+inline static void _flarrSetElemSize(flArray* arr, flInt_t _elemSize){
+    *( (flInt_t*)(&arr->elemSize) ) = _elemSize;
 }
 
-inline static void _flarrSetData(flArray* arr, void* data){
-    void** arrDataptr = (void*)(&arr->data);
-    *arrDataptr = data;
+inline static void _flarrSetData(flArray* arr, void* _data){
+    *( (void**)(&arr->data) ) = _data;
 }
 
 bool flarrAllocCapacity(flArray* arr, flInt_t newCapacity){
