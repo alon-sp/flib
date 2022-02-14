@@ -1,5 +1,5 @@
-#ifndef FLARRHEADERH_INCLUDED
-#define FLARRHEADERH_INCLUDED
+#ifndef FLARRAYHEADERH_INCLUDED
+#define FLARRAYHEADERH_INCLUDED
 
 #include"../flConstants.h"
 #include<string.h>
