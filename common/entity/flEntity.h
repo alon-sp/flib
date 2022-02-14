@@ -10,12 +10,13 @@ typedef struct flEntity flEntity;
 typedef void (*flentTick_tf)(flEntity* self, flUlint_t ct, flUlint_t dt);
 typedef const void* (*flentInput_tf)(flEntity* self, int8_t inputType, flInt_t propid, const void* propv, flEntity* callerEnt);
 
+/*----------INTERFACE DESCRIPTION----------*/
 struct flEntity{
   /**
    * @brief The classification code of this entity
    * 
    */
-  const flEntCC_t ccode;
+  const flentCC_t ccode;
 
   /**
    * @brief The 2D ui or form of this entity.
@@ -97,5 +98,18 @@ struct flEntity{
   const void* (* const input)(flEntity* self, int8_t inputType, flInt_t propid, const void* propv, flEntity* callerEnt);
   
 };
+
+/*----------SETTERS----------*/
+#define _flentSetCcode(entPtr, _ccode)     *( (flentCC_t*)(&entPtr->ccode) )   = _ccode
+
+#define _flentSetUi2D(entPtr, _ui2D)       *( (flEntity**)(&entPtr->ui2D) )    = _ui2D
+#define _flentSetUi3D(entPtr, _ui3D)       *( (flEntity**)(&entPtr->ui3D) )    = _ui3D
+#define _flentSetEnv(entPtr, _env)         *( (flEntity**)(&entPtr->env) )     = _env
+#define _flentSetUinbuf(entPtr, _uinbuf)   *( (flArray **)(&entPtr->uinbuf) )  = _uinbuf
+#define _flentSetProps(entPtr, _props)     *( (void    **)(&entPtr->props) )   = _props
+#define _flentSetEntPtrs(entPtr, _entPtrs) *( (flArray **)(&entPtr->entPtrs) ) = _entPtrs
+
+#define _flentSetTick(entPtr, _tick)    *( (flentTick_tf *)(&entPtr->tick) )   = _tick
+#define _flentSetInput(entPtr, _input)  *( (flentInput_tf*)(&entPtr->input) )  = _input
 
 #endif//FLENTITYHEADERH_INCLUDED
