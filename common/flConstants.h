@@ -13,8 +13,9 @@ typedef float flFloat_t;
 typedef uint32_t flentCC_t;
 
 //fl entity
-#define flentiptGET   1
-#define flentiptSET   2
-#define flentiptPOST  3
+#define flenticoGET                1
+#define flenticoSET                2
+#define flenticoPOST               3
+#define flenticoCLEANUP_EC         4
 
 #endif
