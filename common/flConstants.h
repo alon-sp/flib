@@ -5,17 +5,32 @@
 #include<stdbool.h>
 
 //fl number types
-typedef unsigned long int flUlint_t;
-typedef int flInt_t;
-typedef unsigned int flUint_t;
+typedef int64_t flInt_t;
 typedef float flFloat_t;
 
 typedef uint32_t flentCC_t;
 
 //fl entity
-#define flenticoGET                1
-#define flenticoSET                2
-#define flenticoPOST               3
-#define flenticoCLEANUP_EC         4
+
+///@note flentimo -> fl Entity Input Mode 
+
+/**
+ * @brief Command for retrieving a target property's value.
+ */
+#define flentimoGET                        1
+/**
+ * @brief command for setting a target property's value, intended to be use 
+ * by parent entities only. 
+ */
+#define flentimoSET                        2
+/**
+ * @brief command for posting notification, intended to be use by both parent and child entity.
+ */
+#define flentimoPOST                       3
+/**
+ * @brief This command should cause an entity to perform cleanup operation on custom properties
+ * excluding custom properties that have been registered as children entities. 
+ */
+#define flentimoCLEANUP                     4
 
 #endif
