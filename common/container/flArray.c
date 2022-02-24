@@ -23,7 +23,7 @@ bool flarrAllocCapacity(flArray* arr, flInt_t newCapacity){
 
     void* newData = flmemRealloc(arr->data, newCapacity*arr->elemSize);
     if(!newData){
-        flerrHandle("\nMEMf flarrNew !1");
+        flerrHandle("\nMEMf flarrAllocCapacity !1");
         return false;
     }
 
