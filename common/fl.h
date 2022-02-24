@@ -12,7 +12,4 @@
 #define flmemFree(mptr) free(mptr)
 #define flmemRealloc(mptr, nbytes) realloc(mptr, nbytes)
 
-bool flInit();
-void flCleanup();
-
 #endif//FLHEADERH_INCLUDED
