@@ -7,6 +7,7 @@
 //fl number types
 typedef int64_t flInt_t;
 typedef float flFloat_t;
+typedef float flNumber_t;
 
 typedef uint32_t flentCC_t;
 

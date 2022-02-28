@@ -1,14 +1,6 @@
 
 #include"_flEntity.h"
 
-typedef struct{
-    flInt_t sum;
-}_adderProps;
-
-typedef struct{
-    flInt_t product;
-}_multiplierProps;
-
 static bool _test_flentNew(){
     flentCC_t cc = 1;
     flEntity env, *envPtr = &env;
@@ -26,20 +18,39 @@ static bool _test_flentNew(){
     return true;
 }
 
-static bool _test__flentNew(){
-    flentCC_t cc = 1;
-    flEntity env, *envPtr = &env;
+///Test entities declarations and implementations
+
+//Adder Entity
+typedef struct{
+    flNumber_t sum;
+}_adderProps;
+
+static void* _adderInputs(flEntity* self, int8_t inputMode, flInt_t propid, const void* propv, flEntity* callerEnt){
+    switch (inputMode){
+        case flentimoGET:
+            if(propid == flentipnSUM) return &( ((_adderProps*)self->props)->sum );
+        break;
+
+        case flentimoPOST:
+            if(propid == flentipnNUMBER){
+                
+            }
+        break;
     
-    flEntity ent = _flentNew(cc, envPtr);
-
-    if(ent.ccode != cc || ent.env != envPtr || ent.ui2D || ent.ui3D || ent.uinbuf
-        || ent.props || ent.entPtrs || ent.tick || ent.input){
-            flerrHandle("\nTESf _test__flentNew Test Failed !1");
-            return false;
-        }
-
-    return true;
+        default:
+        break;
+    }
 }
+
+//Multiplier entity
+typedef struct{
+    flNumber_t product;
+}_multiplierProps;
+
+typedef struct{
+    flEntity * adder;
+    flEntity * multiplier;
+}_opResultAccumulatorProps;
 
 static bool _test_flentForeach(){
     

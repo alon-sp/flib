@@ -9,7 +9,7 @@
 typedef struct flEntity flEntity;
 
 typedef void (*flentTick_tf)(flEntity* self, flInt_t ct, flInt_t dt);
-typedef const void* (*flentInput_tf)(flEntity* self, int8_t inputCmd, flInt_t propid, const void* propv, flEntity* callerEnt);
+typedef const void* (*flentInput_tf)(flEntity* self, int8_t inputMode, flInt_t propid, const void* propv, flEntity* callerEnt);
 
 /*----------INTERFACE DESCRIPTION----------*/
 struct flEntity{
@@ -62,6 +62,8 @@ struct flEntity{
   /**
    * @brief All other additional properties of this entity apart from the ones 
    * specified by the interface.
+   * @note This is the only property an entity should perform clean up operation
+   * on when it receives the clean up input command. All other properties of the 
    */
   const void * const props;
 
@@ -69,8 +71,8 @@ struct flEntity{
    * @brief An array of pointers to all entities INCLUDING($.ui2D and $.ui3D) that are
    * children of this entity.(IE this entity is considered as the environment of these entities).
    * @note If this entity has any entity whose pointer is not included in this array, 
-   * that entity will not be consider as child entity. And hence operations such as ticking
-   * that are performed on child's entity will not be perform on such entity.
+   * that entity will not be consider as child entity. And hence operations such as ticking and 
+   * clean up that are performed on child's entity will not be perform on such entity.
    */
   const flArray * const entPtrs;
 
@@ -90,13 +92,13 @@ struct flEntity{
    * or between this entity and it's children or between this entity and other procedures but
    * not between this entity and any of it's siblings directly.
    * @param self This entity itself
-   * @param inputCmd The input command: whether GET, SET, POST, or CLEANUP
+   * @param inputMode The mode of input: whether GET, SET, POST, or CLEANUP
    * @param propid The id or name of the property or command
    * @param propv The value or argument of this property or command
    * @param callerEnt The entity that called this method. It's value can be NULL when necessary
    * @return Result of the operation | NULL
    */
-  const void* (* const input)(flEntity* self, int8_t inputCmd, flInt_t propid, const void* propv, flEntity* callerEnt);
+  const void* (* const input)(flEntity* self, int8_t inputMode, flInt_t propid, const void* propv, flEntity* callerEnt);
   
 };
 
