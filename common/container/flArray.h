@@ -47,13 +47,22 @@ bool flarrAllocCapacity(flArray* flarr, flInt_t newCapacity);
 bool flarrSetLength(flArray* flarr, flInt_t newLength);
 
 /**
- * @brief Read $flarr->elemSize bytes from $dataBytesPtr and write it at $flarr[$flarr->length]
- * and increment $flarr->length
+ * @brief Read $flarr->elemSize bytes from $dataBytesPtr and write it to $flarr beginning
+ * at $flarr[$flarr->length] and increment $flarr->length by 1
  * @param flarr 
  * @param dataBytesPtr 
  * @return void* pointer to the written data in $flarr | NULL if push failed
  */
 void* flarrPush(flArray* flarr, const void* dataBytesPtr);
+
+/**
+ * @brief Read $elemCount * $flarr->elemSize bytes from $dataBytesPtr and write it to $flarr
+ *  beginning at $flarr[$flarr->length] and increment $flarr->length by $elemCount
+ * @param flarr 
+ * @param dataBytesPtr 
+ * @return void* pointer to the first element of $dataBytesPtr in $flarr | NULL if push failed
+ */
+void* flarrPushs(flArray* flarr, const void* dataBytesPtr, flInt_t elemCount);
 
 /**
  * @brief Pop the element at $flarr[$flarr->length] and decrement $flarr->length
@@ -71,8 +80,17 @@ void* flarrPop(flArray* flarr);
  */
 void* flarrGet(flArray* flarr, flInt_t index);
 
+// /**
+//  * @brief compare each element of $flarr against first $flarr->elemSize bytes of $dataBytesPtr
+//  * for equality.
+//  * @param flarr 
+//  * @param dataBytesPtr 
+//  * @return pointer to the first element of $flarr that is equal to $dataBytesPtr | NULL if none
+//  */
+// void* flarrFind(flArray* flarr, const void * dataBytesPtr);
+
 /**
- * @brief Write the element at the given index
+ * @brief Write first $flarr->elemSize bytes of $dataBytesPtr at the given index
  * 
  * @param flarr 
  * @param index 
@@ -106,6 +124,8 @@ void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr);
 #define _flarrGet(flarr, index) ( ((char*)(flarr)->data)+ (index)*(flarr)->elemSize )
 
 #define _flarrPut(flarr, index, dataBytesPtr) memcpy( _flarrGet(flarr, index), dataBytesPtr, flarr->elemSize )
+
+#define _flarrPuts(flarr, index, dataBytesPtr, elemCount) memcpy( _flarrGet(flarr, index), dataBytesPtr, elemCount*flarr->elemSize )
 
 /*----------STRING PROCESSING UTILS----------*/
 /**

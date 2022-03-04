@@ -89,6 +89,16 @@ void* flarrPush(flArray* flarr, const void* dataBytesPtr){
     return _flarrGet(flarr, flarr->length-1);
 }
 
+void* flarrPushs(flArray* flarr, const void* dataBytesPtr, flInt_t elemCount){
+    if(flarr->length+elemCount >= flarr->capacity){
+        if(!flarrAllocCapacity(flarr, flarr->capacity*2 + elemCount)) return NULL;
+    }
+    _flarrPuts(flarr, flarr->length, dataBytesPtr, elemCount);
+    _flarrSetLength(flarr, flarr->length+elemCount);
+
+    return _flarrGet(flarr, flarr->length-elemCount);
+}
+
 void* flarrPop(flArray* flarr){
     return _flarrPop(flarr);
 }
@@ -102,6 +112,16 @@ void* flarrGet(flArray* flarr, flInt_t index){
     }
     return _flarrGet(flarr, index);
 }
+
+// void* flarrFind(flArray* flarr, const void * dataBytesPtr){
+//     for(flInt_t i = 0; i<flarr->length; i++){
+//         if(memcmp(dataBytesPtr, _flarrGet(flarr, i), flarr->elemSize) == 0 ){
+//             return _flarrGet(flarr, i);
+//         }
+//     }
+
+//     return NULL;
+// }
 
 void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr){
     if(index < 0) index = 0;
@@ -118,16 +138,10 @@ void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr){
 
 /*----------STRING PROCESSING UTILS----------*/
 const char* flarrStrPush(flArray* chArr, const char* strv){
-    uint32_t strvLenPlusNullChar = strlen(strv)+1;
-    if(chArr->length+strvLenPlusNullChar >= chArr->capacity){
-        if( !flarrAllocCapacity(chArr,  chArr->capacity*2 + strvLenPlusNullChar) ) return NULL;
-    }
-    
-    char* strvDest = _flarrGet(chArr, chArr->length);
-    for(int i = 0; i < strvLenPlusNullChar; i++) *(strvDest+i) = *(strv+i);
-    
-    //Set the length of the string such that chArr->data[chArr->length] = '\0'
-    _flarrSetLength(chArr, chArr->length+strvLenPlusNullChar-1);
+
+    flarrPushs(chArr, strv, strlen(strv)+1/*include null char*/);
+
+    _flarrSetLength(chArr, chArr->length-1);/*exclude the null character*/
 
     return _flarrStrCstr(chArr);
 }

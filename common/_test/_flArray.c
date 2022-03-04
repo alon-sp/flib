@@ -108,10 +108,34 @@ static bool _flarrTestStrPop(){
 
 }
 
+static bool _flarrTestPushs(){
+    flArray* intArr = flarrNew(0, sizeof(int));
+    int nums[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+    flarrPushs(intArr, nums, sizeof(nums) / sizeof(*nums));
+    if(intArr->length != sizeof(nums) / sizeof(*nums)){
+        flerrHandle("\nTESf _flarrTestPushs: Test Failed !1");
+    }
+
+    for(int i = 0; i<intArr->length; i++){
+        if( *( (int*)flarrGet(intArr, i) ) != nums[i]){
+            flerrHandle("\nTESf _flarrTestPushs: Test Failed !2");
+        }
+    }
+
+    flarrFree(&intArr);
+
+    printf("\n_flarrTestPushs: TEST OK");
+
+    return true;
+
+}
+
 bool _flarrRunTests(){
     _flarrTestPush();
     _flarrTestSetLength();
     _flarrTestPut();
     _flarrTestStrPush();
     _flarrTestStrPop();
+    _flarrTestPushs();
 }
