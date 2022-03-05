@@ -69,40 +69,40 @@ static bool _flarrTestPut(){
     return true;
 }
 
-static bool _flarrTestStrPush(){
+static bool _flarrstrTestPush(){
     flArray* str = flarrNew(5, sizeof(char));
-    flarrStrPush(str, "Hello");
-    flarrStrPush(str, " world");
-    flarrStrPush(str, " from");
-    flarrStrPush(str, " flarrStr");
-    if(strcmp(flarrStrCstr(str), "Hello world from flarrStr") != 0){
-        flerrHandle("\nTESf _flarrTestStrPush: Test Failed !1");
+    flarrstrPush(str, "Hello");
+    flarrstrPush(str, " world");
+    flarrstrPush(str, " from");
+    flarrstrPush(str, " flarrstr");
+    if(strcmp(flarrstrCstr(str), "Hello world from flarrstr") != 0){
+        flerrHandle("\nTESf _flarrstrTestPush: Test Failed !1");
     }
 
     flarrFree(&str);
 
-    printf("\n_flarrTestStrPush: TEST OK");
+    printf("\n_flarrstrTestPush: TEST OK");
 
     return true;
 }
 
-static bool _flarrTestStrPop(){
+static bool _flarrstrTestPop(){
     flArray* str = flarrNew(5, sizeof(char));
-    flarrStrPush(str, "olleH");
+    flarrstrPush(str, "olleH");
     char helloStr[5+1];
     
     int i = 0;
-    while( str->length ) helloStr[i++] = flarrStrPop(str);
+    while( str->length ) helloStr[i++] = flarrstrPop(str);
 
     helloStr[strlen("Hello")] = '\0';
 
     if(strcmp(helloStr, "Hello") != 0){
-        flerrHandle("\nTESf _flarrTestStrPop: Test Failed !1");
+        flerrHandle("\nTESf _flarrstrTestPop: Test Failed !1");
     }
 
     flarrFree(&str);
 
-    printf("\n_flarrTestStrPop: TEST OK");
+    printf("\n_flarrstrTestPop: TEST OK");
 
     return true;
 
@@ -135,7 +135,7 @@ bool _flarrRunTests(){
     _flarrTestPush();
     _flarrTestSetLength();
     _flarrTestPut();
-    _flarrTestStrPush();
-    _flarrTestStrPop();
+    _flarrstrTestPush();
+    _flarrstrTestPop();
     _flarrTestPushs();
 }

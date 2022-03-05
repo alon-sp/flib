@@ -137,7 +137,7 @@ void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr);
  * @param strv 
  * @return pointer to the resulting c-string | NULL if error(memory related) occur
  */
-const char* flarrStrPush(flArray* chArr, const char* strv);
+const char* flarrstrPush(flArray* chArr, const char* strv);
 
 /**
  * @brief 
@@ -145,7 +145,7 @@ const char* flarrStrPush(flArray* chArr, const char* strv);
  * @param chArr 
  * @return c-string
  */
-const char* flarrStrCstr(flArray* chArr);
+const char* flarrstrCstr(flArray* chArr);
 
 /**
  * @brief Pop the character at $chArr->length-1 and NULL terminate the resulting string
@@ -153,8 +153,8 @@ const char* flarrStrCstr(flArray* chArr);
  * @param chArr 
  * @return the popped character
  */
-char flarrStrPop(flArray* chArr);
+char flarrstrPop(flArray* chArr);
 
-#define _flarrStrCstr(flarr) _flarrGet(flarr, 0)
+#define _flarrstrCstr(flarr) _flarrGet(flarr, 0)
 
 #endif

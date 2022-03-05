@@ -137,22 +137,22 @@ void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr){
 }
 
 /*----------STRING PROCESSING UTILS----------*/
-const char* flarrStrPush(flArray* chArr, const char* strv){
+const char* flarrstrPush(flArray* chArr, const char* strv){
 
     flarrPushs(chArr, strv, strlen(strv)+1/*include null char*/);
 
     _flarrSetLength(chArr, chArr->length-1);/*exclude the null character*/
 
-    return _flarrStrCstr(chArr);
+    return _flarrstrCstr(chArr);
 }
 
-char flarrStrPop(flArray* chArr){
+char flarrstrPop(flArray* chArr){
     char c = *((char*)_flarrPop(chArr));
     _flarrPut(chArr, chArr->length, "");
 
     return c;
 }
 
-const char* flarrStrCstr(flArray* chArr){
-    return _flarrStrCstr(chArr);
+const char* flarrstrCstr(flArray* chArr){
+    return _flarrstrCstr(chArr);
 }
