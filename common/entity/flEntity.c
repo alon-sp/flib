@@ -3,7 +3,7 @@
 
 #include"flEntity.h"
 
-flEntity* flentNew(flentCC_t ccode, const flEntity* env){
+flEntity* flentNew(flentCC_t ccode, flEntity* controller, int initialCompCount){
     flEntity* ent = flmemMalloc(sizeof(flEntity));
     if(!ent){
         flerrHandle("\nMEMf flentNew");
@@ -11,17 +11,51 @@ flEntity* flentNew(flentCC_t ccode, const flEntity* env){
     }
 
     _flentSetCcode(ent, ccode);
-    _flentSetEnv(ent, env);
+
+    //Create two $flArray with initial capacity large enough to be able to
+    //store the data mode and ID and a pointer
+    flArray* cinArr = flarrNew(sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*), sizeof(uint8_t));
+    flArray* coutArr = flarrNew(sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*), sizeof(uint8_t));
+
+    _flentSetCin(ent, cinArr);
+    _flentSetCout(ent, coutArr);
 
     _flentSetUi2D(ent, NULL);
     _flentSetUi3D(ent, NULL);
-    _flentSetUinbuf(ent, NULL);
-    _flentSetProps(ent, NULL);
-    _flentSetEntPtrs(ent, NULL);
-    _flentSetTick(ent, NULL);
-    _flentSetInput(ent, NULL);
+
+    if(initialCompCount){
+        _flentSetComponents(ent, flarrNew(initialCompCount, sizeof(flEntity*)));
+    }
+
+    flentSetProps(ent, NULL);
+    flentSetTick(ent, NULL);
+
+    flentAddCompPtr(controller, ent);
 
     return ent;
+}
+
+const flEntity** flentAddCompPtr(flEntity* controller, const flEntity* compPtr){
+    if( !(controller && compPtr) ) return false;
+
+    if(!controller->components){
+        _flentSetComponents(controller, flarrNew(2, sizeof(flEntity*)));
+    }
+
+    //Check for existance of the component to be added in the controller and any available free slot.
+    int freeSlotIndex = -1;
+    for(int i = 0; i<controller->components->length; i++){
+        const flEntity** eptr = (flEntity**)flarrGet(controller->components, i);
+        if(*eptr == compPtr) return eptr;
+        else if(!*eptr && freeSlotIndex < 0) freeSlotIndex = i;
+    }
+
+    //Link component with controller
+    _flentSetCon(compPtr, controller);
+
+    if(freeSlotIndex >= 0) return flarrPut(controller->components, freeSlotIndex, compPtr);
+    
+    return flarrPush(controller->components, compPtr);
 }
 
 void flentForeach(const flEntity* env, void (*funcToApply)(flEntity*, void*), void* funcArgs, flArray* lstack){
