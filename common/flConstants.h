@@ -11,27 +11,43 @@ typedef float flNumber_t;
 
 typedef uint32_t flentCC_t;
 
-//fl entity
+///fl entity
+//----------
 
-///@note flentimo -> fl Entity Input Mode 
+///@note flentdmo -> fl Entity Data Mode 
 
 /**
- * @brief Command for retrieving a target property's value.
+ * @brief Represent the absence of any data.
+ * 
  */
-#define flentimoGET                        1
+#define flentdmoNIL                        0
+
 /**
- * @brief command for setting a target property's value, intended to be use 
- * by parent entities only. 
+ * @brief Command for requesting a particular data.
  */
-#define flentimoSET                        2
+#define flentdmoGET                        1
 /**
- * @brief command for posting notification, intended to be use by both parent and child entity.
+ * @brief command for updating a particular data, intended to be use 
+ * by parent/controller entities only. 
  */
-#define flentimoPOST                       3
+#define flentdmoSET                        2
+/**
+ * @brief command for posting notification, intended to be use by both controller and component entity.
+ */
+#define flentdmoPOST                       3
+
+///SYC -> system command
+
+/**
+ * @brief Represent the absence of any system command.
+ * 
+ */
+#define flentsycNIL                        0
+
 /**
  * @brief This command should cause an entity to perform cleanup operation on custom properties
- * excluding custom properties that have been registered as children entities. 
+ * excluding custom properties that have been registered as components.
  */
-#define flentimoCLEANUP                     4
+#define flentsycCLEANUP                    1
 
 #endif

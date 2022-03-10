@@ -3,62 +3,91 @@
 
 #include"flEntity.h"
 
-flEntity* flentNew(flentCC_t ccode, flEntity* controller, int initialCompCount){
-    flEntity* ent = flmemMalloc(sizeof(flEntity));
-    if(!ent){
+bool flentSetUi2D(flEntity* entP, flEntity* ui2dP){
+    if(entP->ui2D) return false;
+
+    flEntity** ePP = flentAddCompPtr(entP, ui2dP);
+    _flentSetUi2D(entP, ePP? *ePP : NULL);
+
+    return ePP? true : false;
+}
+
+bool flentSetUi3D(flEntity* entP, flEntity* ui3dP){
+    if(entP->ui3D) return false;
+
+    flEntity** ePP = flentAddCompPtr(entP, ui3dP);
+    _flentSetUi3D(entP, ePP? *ePP : NULL);
+
+    return ePP? true : false;
+}
+
+flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
+    flEntity* entP = flmemMalloc(sizeof(flEntity));
+    if(!entP){
         flerrHandle("\nMEMf flentNew");
         return NULL;
     }
 
-    _flentSetCcode(ent, ccode);
+    _flentSetCcode(entP, ccode);
 
     //Create two $flArray with initial capacity large enough to be able to
     //store the data mode and ID and a pointer
     flArray* cinArr = flarrNew(sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*), sizeof(uint8_t));
     flArray* coutArr = flarrNew(sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*), sizeof(uint8_t));
 
-    _flentSetCin(ent, cinArr);
-    _flentSetCout(ent, coutArr);
+    _flentSetCin(entP, cinArr);
+    _flentSetCout(entP, coutArr);
 
-    _flentSetUi2D(ent, NULL);
-    _flentSetUi3D(ent, NULL);
+    _flentSetUi2D(entP, NULL);
+    _flentSetUi3D(entP, NULL);
 
     if(initialCompCount){
-        _flentSetComponents(ent, flarrNew(initialCompCount, sizeof(flEntity*)));
-    }
+        _flentSetComponents(entP, flarrNew(initialCompCount, sizeof(flEntity*)));
+    }else{ _flentSetComponents(entP, NULL); }
 
-    flentSetProps(ent, NULL);
-    flentSetTick(ent, NULL);
+    flentSetProps(entP, NULL);
+    flentSetTick(entP, NULL);
 
-    flentAddCompPtr(controller, ent);
+    flentAddCompPtr(contP, entP);
 
-    return ent;
+    return entP;
 }
 
-const flEntity** flentAddCompPtr(flEntity* controller, const flEntity* compPtr){
-    if( !(controller && compPtr) ) return false;
+const flEntity** flentAddCompPtr(flEntity* contP, const flEntity* compP){
+    if( !(contP && compP) ) return NULL;
 
-    if(!controller->components){
-        _flentSetComponents(controller, flarrNew(2, sizeof(flEntity*)));
+    if(!contP->components){
+        _flentSetComponents(contP, flarrNew(2, sizeof(flEntity*)));
     }
 
     //Check for existance of the component to be added in the controller and any available free slot.
     int freeSlotIndex = -1;
-    for(int i = 0; i<controller->components->length; i++){
-        const flEntity** eptr = (flEntity**)flarrGet(controller->components, i);
-        if(*eptr == compPtr) return eptr;
-        else if(!*eptr && freeSlotIndex < 0) freeSlotIndex = i;
+    for(int i = 0; i<contP->components->length; i++){
+        const flEntity** entPP = (flEntity**)flarrGet(contP->components, i);
+        if(*entPP == compP) return entPP;
+        else if(!*entPP && freeSlotIndex < 0) freeSlotIndex = i;
     }
 
     //Link component with controller
-    _flentSetCon(compPtr, controller);
+    _flentSetCon(compP, contP);
 
-    if(freeSlotIndex >= 0) return flarrPut(controller->components, freeSlotIndex, compPtr);
+    if(freeSlotIndex >= 0) return flarrPut(contP->components, freeSlotIndex, compP);
     
-    return flarrPush(controller->components, compPtr);
+    return flarrPush(contP->components, compP);
 }
 
-void flentForeach(const flEntity* env, void (*funcToApply)(flEntity*, void*), void* funcArgs, flArray* lstack){
+// void flentRemoveCompPtr(flEntity* contP, const flEntity* compP){
+//     if( !(contP && compP) ) return;
+
+//     for(int i = 0; i<contP->components->length; i++){
+//         const flEntity** entPP = (flEntity**)flarrGet(contP->components, i);
+//         if(*entPP == compP){
+//             flarrPut(contP->components, entPP - (flEntity**)flarrGet(contP->components, 0), NULL);
+//         }
+//     }
+// }
+
+void flentForeach(const flEntity* contP, void (*funcToApply)(flEntity*, void*), void* funcArgs, flArray* lstack){
     static flArray* _defaultStack = NULL;
 
     //Check args
@@ -71,52 +100,58 @@ void flentForeach(const flEntity* env, void (*funcToApply)(flEntity*, void*), vo
     }
     flInt_t iniLstackLength = lstack->length;
 
-    //Apply callback and push children entities to stack
-    flarrPush(lstack, env);
+    //Loop through all entities and apply callback
+    flarrPush(lstack, contP);
     while(lstack->length != iniLstackLength){
-        flEntity* cent = (flEntity*)flarrPop(lstack);
-        if(cent){
-            //Push all children of the current entity($cent) to the stack
-            ///@note It's the responsibility of the caller to ensure that children entities will
-            ///still be valid after applying callback to parent.
-            if(cent->entPtrs){
-                for(flInt_t j = 0; j < cent->entPtrs->length; j++){
-                    flarrPush(lstack, flarrGet(cent->entPtrs, j));
+        flEntity* centP = *(flEntity**)flarrPop(lstack);//centP -> controller entity pointer
+        if(centP){
+            //Push all components of the current controller entity($cent) to the stack
+            ///@note It's the responsibility of the caller to ensure that components entities will
+            ///still be valid after applying callback to their controller.
+            if(centP->components){
+                for(flInt_t j = 0; j < centP->components->length; j++){
+                    flarrPush(lstack, *(flEntity**)flarrGet(centP->components, j));
                 }
             }
 
-            ///Apply callback. @note It's important that we push children to stack
+            ///Apply callback. @note It's important that we push components to stack
             ///before applying callback. This is to prevent us from accessing an invalid
-            ///object(entity) which may result from applying the callback.
-            if(funcToApply) funcToApply(cent, funcArgs);
-            else //Perform default action : tick
-                cent->tick( cent, *( ((flInt_t*)funcArgs)+0 ), *( ((flInt_t*)funcArgs)+1 ) );
+            ///object(controller entity) which may result from applying the callback.
+            if(funcToApply) funcToApply(centP, funcArgs);
+            else{ //Perform default action : apply tick method
+                flEntityTickMethodArg* tmargP = (flEntityTickMethodArg*) funcArgs;
+                centP->tick( centP, tmargP->ct, tmargP->dt, tmargP->syscmd, tmargP->syscmdArgs);
+            }
         }
     }
 }
 
-void flentTick(const flEntity* env, flInt_t ct, flInt_t dt, flArray* lstack){
-    flInt_t argbuf[2] = {ct, dt};
+void flentTick(const flEntity* contP, flInt_t ct, flInt_t dt, int8_t syscmd, const void* syscmdArgs, flArray* lstack){
+    flEntityTickMethodArg tmarg = {.self = NULL, .ct = ct, .dt = dt, .syscmd = syscmd, .syscmdArgs = syscmdArgs};
 
-    flentForeach(env, NULL, argbuf, lstack);
+    flentForeach(contP, NULL, &tmarg, NULL);
 }
 
 static void freeEntity(flEntity* ent, void* otherArgs){
-    ent->input(ent, flentimoCLEANUP, flentipnNIL, NULL, NULL);
+    ent->tick(ent, 0, 0, flentsycCLEANUP, NULL);
 
-    if(ent->uinbuf) flarrFree(&ent->uinbuf);
-    if(ent->entPtrs) flarrFree(&ent->entPtrs);
+    ///@note $ent->ui2D and $ent->ui3D are components of the current entity($ent) and hence
+    ///this function will be called on them later.
+    
+    ///@note At this stage $ent->_con no longer exist(ie this function has been called on it)
 
-    _flentSetUinbuf(ent, NULL);
-    _flentSetEntPtrs(ent , NULL);
-    _flentSetTick(ent, NULL);
-    _flentSetInput(ent, NULL);
+    if(ent->_cin) flarrFree(&ent->_cin);
+    if(ent->_cout) flarrFree(&ent->_cout);
+
+    //At this stage all components' pointers have been pushed to the stack and this function
+    //will be called on them later; hence it's safe to destroy this array.
+    if(ent->components) flarrFree(&ent->components);
 
     flmemFree(ent);
 }
 
-void flentFree(flEntity** env, flArray* lstack){
-    flentForeach(*env, freeEntity, NULL, lstack);
+void flentFree(flEntity** contPP, flArray* lstack){
+    flentForeach(*contPP, freeEntity, NULL, lstack);
 
-    *env = NULL;
+    *contPP = NULL;
 }

@@ -121,7 +121,7 @@ void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr);
     ( ( (flarr)->length && flarrSetLength(flarr, (flarr)->length-1) )?\
         _flarrGet(flarr, flarr->length) : NULL )
 
-#define _flarrGet(flarr, index) ( ((char*)(flarr)->data)+ (index)*(flarr)->elemSize )
+#define _flarrGet(flarr, index) ( ((char*)(flarr)->data) + (index)*(flarr)->elemSize )
 
 #define _flarrPut(flarr, index, dataBytesPtr) memcpy( _flarrGet(flarr, index), dataBytesPtr, flarr->elemSize )
 
