@@ -3,12 +3,15 @@
 
 static bool _test_flentNew(){
     flentCC_t cc = 1;
-    flEntity env, *envPtr = &env;
+    flEntity *contP = flentNew(cc, NULL, 1);
     
-    flEntity* ent = flentNew(cc, envPtr);
+    flEntity* ent = flentNew(cc, contP, 2);
 
-    if(ent->ccode != cc || ent->env != envPtr || ent->ui2D || ent->ui3D || ent->uinbuf
-        || ent->props || ent->entPtrs || ent->tick || ent->input){
+    if(ent->ccode != cc || ent->_con != contP || ent->ui2D || ent->ui3D || 
+        ent->_cin->capacity != sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*) ||
+        ent->_cout->capacity != sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*) ||
+        ent->props || ent->components->capacity != 2 || ent->tick ||
+        contP->components->length != 1){
             flerrHandle("\nTESf _test_flentNew Test Failed !1");
             return false;
         }
@@ -25,23 +28,6 @@ typedef struct{
     flNumber_t sum;
 }_adderProps;
 
-static void* _adderInputs(flEntity* self, int8_t inputMode, flInt_t propid, const void* propv, flEntity* callerEnt){
-    switch (inputMode){
-        case flentimoGET:
-            if(propid == flentipnSUM) return &( ((_adderProps*)self->props)->sum );
-        break;
-
-        case flentimoPOST:
-            if(propid == flentipnNUMBER){
-                
-            }
-        break;
-    
-        default:
-        break;
-    }
-}
-
 //Multiplier entity
 typedef struct{
     flNumber_t product;
@@ -52,6 +38,9 @@ typedef struct{
     flEntity * multiplier;
 }_opResultAccumulatorProps;
 
-static bool _test_flentForeach(){
-    
+
+bool _flentRunTests(){
+    _test_flentNew();
+
+    return true;
 }

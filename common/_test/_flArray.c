@@ -138,4 +138,6 @@ bool _flarrRunTests(){
     _flarrstrTestPush();
     _flarrstrTestPop();
     _flarrTestPushs();
+
+    return true;
 }

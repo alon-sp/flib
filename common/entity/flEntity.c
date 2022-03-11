@@ -6,8 +6,8 @@
 bool flentSetUi2D(flEntity* entP, flEntity* ui2dP){
     if(entP->ui2D) return false;
 
-    flEntity** ePP = flentAddCompPtr(entP, ui2dP);
-    _flentSetUi2D(entP, ePP? *ePP : NULL);
+    const flEntity** ePP = flentAddCompPtr(entP, ui2dP);
+    _flentSetUi2D(entP, ePP? (flEntity*)*ePP : NULL);
 
     return ePP? true : false;
 }
@@ -15,8 +15,8 @@ bool flentSetUi2D(flEntity* entP, flEntity* ui2dP){
 bool flentSetUi3D(flEntity* entP, flEntity* ui3dP){
     if(entP->ui3D) return false;
 
-    flEntity** ePP = flentAddCompPtr(entP, ui3dP);
-    _flentSetUi3D(entP, ePP? *ePP : NULL);
+    const flEntity** ePP = flentAddCompPtr(entP, ui3dP);
+    _flentSetUi3D(entP, ePP? (flEntity*)*ePP : NULL);
 
     return ePP? true : false;
 }
@@ -63,7 +63,7 @@ const flEntity** flentAddCompPtr(flEntity* contP, const flEntity* compP){
     //Check for existance of the component to be added in the controller and any available free slot.
     int freeSlotIndex = -1;
     for(int i = 0; i<contP->components->length; i++){
-        const flEntity** entPP = (flEntity**)flarrGet(contP->components, i);
+        const flEntity** entPP = (const flEntity**)flarrGet( (flArray*)contP->components, i);
         if(*entPP == compP) return entPP;
         else if(!*entPP && freeSlotIndex < 0) freeSlotIndex = i;
     }
@@ -71,9 +71,9 @@ const flEntity** flentAddCompPtr(flEntity* contP, const flEntity* compP){
     //Link component with controller
     _flentSetCon(compP, contP);
 
-    if(freeSlotIndex >= 0) return flarrPut(contP->components, freeSlotIndex, compP);
+    if(freeSlotIndex >= 0) return flarrPut( (flArray*)contP->components, freeSlotIndex, compP);
     
-    return flarrPush(contP->components, compP);
+    return flarrPush( (flArray*)contP->components, compP);
 }
 
 // void flentRemoveCompPtr(flEntity* contP, const flEntity* compP){
@@ -105,12 +105,12 @@ void flentForeach(const flEntity* contP, void (*funcToApply)(flEntity*, void*), 
     while(lstack->length != iniLstackLength){
         flEntity* centP = *(flEntity**)flarrPop(lstack);//centP -> controller entity pointer
         if(centP){
-            //Push all components of the current controller entity($cent) to the stack
+            //Push all components of the current controller entity($centP) to the stack
             ///@note It's the responsibility of the caller to ensure that components entities will
             ///still be valid after applying callback to their controller.
             if(centP->components){
                 for(flInt_t j = 0; j < centP->components->length; j++){
-                    flarrPush(lstack, *(flEntity**)flarrGet(centP->components, j));
+                    flarrPush(lstack, *(flEntity**)flarrGet( (flArray*)centP->components, j));
                 }
             }
 
@@ -140,12 +140,12 @@ static void freeEntity(flEntity* ent, void* otherArgs){
     
     ///@note At this stage $ent->_con no longer exist(ie this function has been called on it)
 
-    if(ent->_cin) flarrFree(&ent->_cin);
-    if(ent->_cout) flarrFree(&ent->_cout);
+    if(ent->_cin) flarrFree( (flArray**) &ent->_cin );
+    if(ent->_cout) flarrFree( (flArray**)&ent->_cout);
 
     //At this stage all components' pointers have been pushed to the stack and this function
     //will be called on them later; hence it's safe to destroy this array.
-    if(ent->components) flarrFree(&ent->components);
+    if(ent->components) flarrFree( (flArray**) &ent->components);
 
     flmemFree(ent);
 }

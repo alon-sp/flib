@@ -168,7 +168,7 @@ const flEntity** flentAddCompPtr(flEntity* contP, const flEntity* compP);
  * @param lstack An array of pointers to flEntity to be use for transversing the tree
  * since this method does not use recursion.
  * @note if $funcToApply is NULL and $funcArgs is not NULL, this function assumes that
- * the user wants to apply the tick method of each entity and hence will interpret 
+ * the caller wants to apply the tick method of each entity and hence will interpret 
  * $funcArgs as a pointer to $flEntityTickMethodArg object.
  * @note if both $funcToApply and $funcArgs are NULL, this function does nothing.
  * @note if $lstack is NULL, this function uses it's internal static stack making it

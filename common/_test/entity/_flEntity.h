@@ -3,4 +3,6 @@
 
 #include"../../fl.h"
 
+bool _flentRunTests();
+
 #endif//_FLENTITYHEADERH_INCLUDED
