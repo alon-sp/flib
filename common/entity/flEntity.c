@@ -38,6 +38,7 @@ bool flentSetUi3D(flEntity* entP, flEntity* ui3dP){
 void flentWriteToComponentOutput(flEntity* contP, flEntity* compP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
     if(compP->_con != contP){
         _flentdioReportError(contP, compP, "flentWriteToComponentOutput")
+        return;
     }
 
     flarrSetLength(compP->_cin, 0);
@@ -50,6 +51,7 @@ void flentWriteToComponentOutput(flEntity* contP, flEntity* compP, int8_t dataMo
 void flentWriteToControllerOutput(flEntity* compP, flEntity* contP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
     if(compP->_con != contP){
         _flentdioReportError(compP, contP, "flentWriteToControllerOutput")
+        return;
     }
 
     flarrSetLength(compP->_cout, 0);
@@ -61,7 +63,55 @@ void flentWriteToControllerOutput(flEntity* compP, flEntity* contP, int8_t dataM
 }
 
 void flentReadFromComponentOutput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
-    
+    if(compP->_con != contP){
+        _flentdioReportError(contP, compP, "flentReadFromComponentOutput")
+        return;
+    }
+    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cin, 0);
+
+    *dataModeP = *byteBuffer;
+    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
+}
+
+void flentReadFromControllerInput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
+    if(compP->_con != contP){
+        _flentdioReportError(compP, contP, "flentReadFromControllerInput")
+        return;
+    }
+    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cin, 0);
+
+    *dataModeP = *byteBuffer;
+    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
+}
+
+void flentReadFromControllerOutput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
+    if(compP->_con != contP){
+        _flentdioReportError(compP, contP, "flentReadFromControllerOutput")
+        return;
+    }
+    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cout, 0);
+
+    *dataModeP = *byteBuffer;
+    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
+}
+
+void flentReadFromComponentInput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
+    if(compP->_con != contP){
+        _flentdioReportError(contP, compP, "flentReadFromComponentInput")
+        return;
+    }
+    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cout, 0);
+
+    *dataModeP = *byteBuffer;
+    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
 }
 
 flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
