@@ -6,8 +6,8 @@
 bool flentSetUi2D(flEntity* entP, flEntity* ui2dP){
     if(entP->ui2D) return false;
 
-    const flEntity** ePP = flentAddCompPtr(entP, ui2dP);
-    _flentSetUi2D(entP, ePP? (flEntity*)*ePP : NULL);
+    flEntity** ePP = (flEntity**)flentAddCompPtr(entP, ui2dP);
+    _flentSetUi2D(entP, ePP? *ePP : NULL);
 
     return ePP? true : false;
 }
@@ -15,10 +15,53 @@ bool flentSetUi2D(flEntity* entP, flEntity* ui2dP){
 bool flentSetUi3D(flEntity* entP, flEntity* ui3dP){
     if(entP->ui3D) return false;
 
-    const flEntity** ePP = flentAddCompPtr(entP, ui3dP);
-    _flentSetUi3D(entP, ePP? (flEntity*)*ePP : NULL);
+    flEntity** ePP = (flEntity**)flentAddCompPtr(entP, ui3dP);
+    _flentSetUi3D(entP, ePP? *ePP : NULL);
 
     return ePP? true : false;
+}
+
+#define _flentdioReportError(e1P, e2P, funcName){\
+        flArray* errBuf = flarrNew(64+sizeof(flentCC_t)*4, sizeof(char));\
+        flarrstrPush(errBuf, "\nACCv ");\
+        flarrstrPush(errBuf, funcName);\
+        flarrstrPush(errBuf, " : ");\
+        flentccoToStr(e1P->ccode, errBuf);\
+        flarrPush(errBuf, " ");\
+        flentccoToStr(e2P->ccode, errBuf);\
+\
+        flerrHandle(flarrstrCstr(errBuf));\
+\
+        flarrFree(errBuf);\
+}
+
+void flentWriteToComponentOutput(flEntity* contP, flEntity* compP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
+    if(compP->_con != contP){
+        _flentdioReportError(contP, compP, "flentWriteToComponentOutput")
+    }
+
+    flarrSetLength(compP->_cin, 0);
+
+    flarrPush(compP->_cin, &dataMode);
+    flarrPushs(compP->_cin, &dataId, sizeof(flentDataID_t));
+    flarrPushs(compP->_cin, data, dataSize);
+}
+
+void flentWriteToControllerOutput(flEntity* compP, flEntity* contP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
+    if(compP->_con != contP){
+        _flentdioReportError(compP, contP, "flentWriteToControllerOutput")
+    }
+
+    flarrSetLength(compP->_cout, 0);
+
+    flarrPush(compP->_cout, &dataMode);
+    flarrPushs(compP->_cout, &dataId, sizeof(flentDataID_t));
+    flarrPushs(compP->_cout, data, dataSize);
+
+}
+
+void flentReadFromComponentOutput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
+    
 }
 
 flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
@@ -154,4 +197,10 @@ void flentFree(flEntity** contPP, flArray* lstack){
     flentForeach(*contPP, freeEntity, NULL, lstack);
 
     *contPP = NULL;
+}
+
+void flentccoToStr(flentCC_t ccode, flArray* charArr){
+    char numstrBuf[12];
+    sprintf(numstrBuf, "%u", ccode);
+    flarrstrPush(charArr, numstrBuf);
 }

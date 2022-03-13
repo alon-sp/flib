@@ -1,6 +1,8 @@
 #ifndef _FLENTITYHEADERH_INCLUDED
 #define _FLENTITYHEADERH_INCLUDED
 
+#include<stdio.h>
+
 #include"../../fl.h"
 
 bool _flentRunTests();
