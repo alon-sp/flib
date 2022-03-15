@@ -3,6 +3,20 @@
 
 #include"flEntity.h"
 
+bool flentSetName(flEntity* entP, const char* namestr){
+    if(!namestr) namestr = "";
+
+    char* destBuf = flmemRealloc( (char*)entP->name, ( strlen(namestr)+1 )*sizeof(char) );
+    if(!destBuf){
+        flerrHandle("\nMEMf flentSetName");
+        return false;
+    }
+
+    strcpy(destBuf, namestr);
+    _flentSetName(entP, destBuf);
+    return true;
+}
+
 bool flentSetUi2D(flEntity* entP, flEntity* ui2dP){
     if(entP->ui2D) return false;
 
@@ -32,7 +46,7 @@ bool flentSetUi3D(flEntity* entP, flEntity* ui3dP){
 \
         flerrHandle(flarrstrCstr(errBuf));\
 \
-        flarrFree(errBuf);\
+        flarrFree(&errBuf);\
 }
 
 void flentWriteToComponentOutput(flEntity* contP, flEntity* compP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
@@ -41,11 +55,11 @@ void flentWriteToComponentOutput(flEntity* contP, flEntity* compP, int8_t dataMo
         return;
     }
 
-    flarrSetLength(compP->_cin, 0);
+    flarrSetLength((flArray*)compP->_cin, 0);
 
-    flarrPush(compP->_cin, &dataMode);
-    flarrPushs(compP->_cin, &dataId, sizeof(flentDataID_t));
-    flarrPushs(compP->_cin, data, dataSize);
+    flarrPush( (flArray*)compP->_cin, &dataMode);
+    flarrPushs( (flArray*)compP->_cin, &dataId, sizeof(flentDataID_t));
+    flarrPushs( (flArray*)compP->_cin, data, dataSize);
 }
 
 void flentWriteToControllerOutput(flEntity* compP, flEntity* contP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
@@ -54,11 +68,11 @@ void flentWriteToControllerOutput(flEntity* compP, flEntity* contP, int8_t dataM
         return;
     }
 
-    flarrSetLength(compP->_cout, 0);
+    flarrSetLength( (flArray*)compP->_cout, 0);
 
-    flarrPush(compP->_cout, &dataMode);
-    flarrPushs(compP->_cout, &dataId, sizeof(flentDataID_t));
-    flarrPushs(compP->_cout, data, dataSize);
+    flarrPush( (flArray*)compP->_cout, &dataMode);
+    flarrPushs( (flArray*)compP->_cout, &dataId, sizeof(flentDataID_t));
+    flarrPushs( (flArray*)compP->_cout, data, dataSize);
 
 }
 
@@ -67,12 +81,12 @@ void flentReadFromComponentOutput(flEntity* contP, flEntity* compP, int8_t* data
         _flentdioReportError(contP, compP, "flentReadFromComponentOutput")
         return;
     }
-    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cin, 0);
+    uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cin, 0);
 
     *dataModeP = *byteBuffer;
     *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
     *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
+    if(dataSizeP) { *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
 }
 
 void flentReadFromControllerInput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
@@ -80,12 +94,12 @@ void flentReadFromControllerInput(flEntity* compP, flEntity* contP, int8_t* data
         _flentdioReportError(compP, contP, "flentReadFromControllerInput")
         return;
     }
-    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cin, 0);
+    uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cin, 0);
 
     *dataModeP = *byteBuffer;
     *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
     *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
+    if(dataSizeP) { *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
 }
 
 void flentReadFromControllerOutput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
@@ -93,12 +107,12 @@ void flentReadFromControllerOutput(flEntity* compP, flEntity* contP, int8_t* dat
         _flentdioReportError(compP, contP, "flentReadFromControllerOutput")
         return;
     }
-    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cout, 0);
+    uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cout, 0);
 
     *dataModeP = *byteBuffer;
     *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
     *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
+    if(dataSizeP){ *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
 }
 
 void flentReadFromComponentInput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
@@ -106,12 +120,12 @@ void flentReadFromComponentInput(flEntity* contP, flEntity* compP, int8_t* dataM
         _flentdioReportError(contP, compP, "flentReadFromComponentInput")
         return;
     }
-    const uint8_t* byteBuffer = (uint8_t*)flarrGet(compP->_cout, 0);
+    uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cout, 0);
 
     *dataModeP = *byteBuffer;
     *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
     *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
+    if(dataSizeP){ *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
 }
 
 flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
@@ -122,11 +136,24 @@ flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
     }
 
     _flentSetCcode(entP, ccode);
+    _flentSetName(entP, NULL);
 
     //Create two $flArray with initial capacity large enough to be able to
-    //store the data mode and ID and a pointer
+    //store the data mode and ID and a pointer; also initialize these arrays with the 
+    //default data mode, id and data.
+    int8_t defaultDataMode = flentdmoNIL;
+    flentDataID_t defaultDataId = flentdidNIL;
+    int8_t defaultData = 0;
+
     flArray* cinArr = flarrNew(sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*), sizeof(uint8_t));
+    flarrPush(cinArr, &defaultDataMode);
+    flarrPushs(cinArr, &defaultDataId, sizeof(flentDataID_t));
+    flarrPush(cinArr, &defaultData);
+
     flArray* coutArr = flarrNew(sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*), sizeof(uint8_t));
+    flarrPush(coutArr, &defaultDataMode);
+    flarrPushs(coutArr, &defaultDataId, sizeof(flentDataID_t));
+    flarrPush(coutArr, &defaultData);
 
     _flentSetCin(entP, cinArr);
     _flentSetCout(entP, coutArr);
@@ -227,6 +254,8 @@ void flentTick(const flEntity* contP, flInt_t ct, flInt_t dt, int8_t syscmd, con
 
 static void freeEntity(flEntity* ent, void* otherArgs){
     ent->tick(ent, 0, 0, flentsycCLEANUP, NULL);
+
+    if(ent->name) flmemFree( (char*)ent->name);
 
     ///@note $ent->ui2D and $ent->ui3D are components of the current entity($ent) and hence
     ///this function will be called on them later.
