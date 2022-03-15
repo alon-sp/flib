@@ -42,7 +42,7 @@ struct flEntity{
   /**
    * @brief The controller of this entity(component)
    */
-  const flEntity * const _con;
+  const flEntity * const controller;
   /**
    * @brief Input from controller to this entity(component)
    * @note This is an array of bytes: 
@@ -135,9 +135,10 @@ bool flentSetUi3D(flEntity* entP, flEntity* ui3dP);
 #define _flentSetUi2D(entPtr, _ui2D)       *( (flEntity**)(&entPtr->ui2D) )     = _ui2D
 #define _flentSetUi3D(entPtr, _ui3D)       *( (flEntity**)(&entPtr->ui3D) )     = _ui3D
 
-#define _flentSetCon(entPtr, con_)          *( (flEntity**)(&entPtr->_con) )     = con_
-#define _flentSetCin(entPtr, cin_)          *( (flArray **)(&entPtr->_cin) )     = cin_
-#define _flentSetCout(entPtr, cout_)        *( (flArray **)(&entPtr->_cout) )    = cout_
+#define _flentSetController(entPtr, _con)  *( (flEntity**)(&entPtr->controller) ) = _con
+
+#define _flentSetCin(entPtr, cin_)         *( (flArray **)(&entPtr->_cin) )     = cin_
+#define _flentSetCout(entPtr, cout_)       *( (flArray **)(&entPtr->_cout) )    = cout_
 
 #define  flentSetProps(entPtr, _props)     *( (void    **)(&entPtr->props) )    = _props
 
@@ -145,103 +146,59 @@ bool flentSetUi3D(flEntity* entP, flEntity* ui3dP);
 
 #define  flentSetTick(entPtr, _tick)       *( (flentTick_tf *)(&entPtr->tick) ) = _tick
 
+typedef struct{
+  int8_t mode;
+  flentDataID_t id;
+  void* data;
+  flInt_t size;
+}flentIOdata;
+
+flentIOdata flentiodNew(int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize);
+
 /*----------IO DATA SETTERS----------*/
 /**
- * @brief Write the given data to the component output of the given controller($contP) if
- * the given component($compP) is a component of the given controller.
- * @note If the given component is not a component of the given controller, this function simply
- * call the global error handling function and return.
- * @note If the controller of the given component is NULL and $contP is also NULL, this function
- * works just fine.
- * @param contP Pointer to the controller of the given component. CAN BE NULL
- * @param compP Pointer to a  component of the given controller.
- * @param dataMode The mode of the data to be written 
- * @param dataId The id of the data to be written
- * @param data The given data
- * @param dataSize Size in bytes of the given data
+ * @brief Write the given data to the component output of the controller of the given
+ * component.
+ * @param compP Pointer to a  component.
+ * @param iod The data to be written. $iod.data CAN BE NULL
  */
-void flentWriteToComponentOutput(flEntity* contP, flEntity* compP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize);
+void flentWriteToComponentOutput(flEntity* compP, flentIOdata iod);
 
 /**
- * @brief Write the given data to the controller output of the given component($compP) if
- * the given component is a component of the given controller($contP).
- * @note If the given component is not a component of the given controller, this function simply
- * call the global error handling function and return.
- * @note If the controller of the given component is NULL and $contP is also NULL, this function
- * works just fine.
- * @param compP Pointer to a component of the given controller.
- * @param contP Pointer to the controller of the given component. CAN BE NULL
- * @param dataMode The mode of the data to be written 
- * @param dataId The id of the data to be written
- * @param data The given data
- * @param dataSize Size in bytes of the given data
+ * @brief Write the given data to the controller output of the given component
+ * @param compP Pointer to a component.
+ * @param iod The data to be written. $iod.data CAN BE NULL
  */
-void flentWriteToControllerOutput(flEntity* compP, flEntity* contP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize);
+void flentWriteToControllerOutput(flEntity* compP, flentIOdata iod);
 
 /*----------IO DATA GETTERS----------*/
 /**
- * @brief Read from the component output of the given controller($contP) if
- * the given component($compP) is a component of the given controller.
- * @note If the given component is not a component of the given controller, this function simply
- * call the global error handling function and return.
- * @note If the controller of the given component is NULL and $contP is also NULL, this function
- * works just fine.
- * @param contP Pointer to the controller of the given component. CAN BE NULL
- * @param compP Pointer to a  component of the given controller.
- * @param dataModeP The destination pointer of the mode of the data to be read 
- * @param dataIdP The destination pointer of the id of the data to be read
- * @param dataP The destination pointer of pointer to the read data.
- * @param dataSizeP The destination pointer of the size in bytes of the read data. CAN BE NULL
+ * @brief Read from the component output of the controller of the given component.
+ * @param compP Pointer to a  component.
+ * @param dest The destination for the data to be read
  */
-void flentReadFromComponentOutput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP);
+void flentReadFromComponentOutput(flEntity* compP, flentIOdata* dest);
 
 /**
- * @brief Read from the controller input of the given component($compP) if
- * the given component is a component of the given controller($contP).
- * @note If the given component is not a component of the given controller, this function simply
- * call the global error handling function and return.
- * @note If the controller of the given component is NULL and $contP is also NULL, this function
- * works just fine.
- * @param compP Pointer to a  component of the given controller.
- * @param contP Pointer to the controller of the given component. CAN BE NULL
- * @param dataModeP The destination pointer of the mode of the data to be read.
- * @param dataIdP The destination pointer of the id of the data to be read.
- * @param dataP The destination pointer of the data to be read.
- * @param dataSizeP The destination pointer of the size in bytes of the data to be read. CAN BE NULL
+ * @brief Read from the controller input of the given component
+ * @param compP Pointer to a  component.
+ * @param dest The destination for the data to be read
  */
-void flentReadFromControllerInput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP);
+void flentReadFromControllerInput(flEntity* compP, flentIOdata* dest);
 
 /**
- * @brief Read from the controller output of the given component($compP) if
- * the given component is a component of the given controller($contP).
- * @note If the given component is not a component of the given controller, this function simply
- * call the global error handling function and return.
- * @note If the controller of the given component is NULL and $contP is also NULL, this function
- * works just fine.
- * @param compP Pointer to a  component of the given controller.
- * @param contP Pointer to the controller of the given component. CAN BE NULL
- * @param dataModeP The destination pointer of the mode of the data to be read 
- * @param dataIdP The destination pointer of the id of the data to be read
- * @param dataP The destination pointer of the data to be read
- * @param dataSizeP The destination pointer of the size in bytes of the data to be read. CAN BE NULL
+ * @brief Read from the controller output of the given component
+ * @param compP Pointer to a  component.
+ * @param dest The destination for the data to be read
  */
-void flentReadFromControllerOutput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP);
+void flentReadFromControllerOutput(flEntity* compP, flentIOdata* dest);
 
 /**
- * @brief Read from the component input of the given controller($contP) if
- * the given component($compP) is a component of the given controller.
- * @note If the given component is not a component of the given controller, this function simply
- * call the global error handling function and return.
- * @note If the controller of the given component is NULL and $contP is also NULL, this function
- * works just fine.
- * @param contP Pointer to the controller of the given component
- * @param compP Pointer to a  component of the given controller.
- * @param dataModeP The destination pointer of the mode of the data to be read 
- * @param dataIdP The destination pointer of the id of the data to be read
- * @param dataP The destination pointer of the data to be read
- * @param dataSizeP The destination pointer of the size in bytes of the data to be read. CAN BE NULL
+ * @brief Read from the component input of the controller of the given component.
+ * @param compP Pointer to a  component.
+ * @param dest The destination for the data to be read
  */
-void flentReadFromComponentInput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP);
+void flentReadFromComponentInput(flEntity* compP, flentIOdata* dest);
 
 /*----------FLENTITY UTILITY FUNCTIONS----------*/
 

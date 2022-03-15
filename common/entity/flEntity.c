@@ -35,97 +35,89 @@ bool flentSetUi3D(flEntity* entP, flEntity* ui3dP){
     return ePP? true : false;
 }
 
-#define _flentdioReportError(e1P, e2P, funcName){\
-        flArray* errBuf = flarrNew(64+sizeof(flentCC_t)*4, sizeof(char));\
-        flarrstrPush(errBuf, "\nACCv ");\
-        flarrstrPush(errBuf, funcName);\
-        flarrstrPush(errBuf, " : ");\
-        flentccoToStr(e1P->ccode, errBuf);\
-        flarrPush(errBuf, " ");\
-        flentccoToStr(e2P->ccode, errBuf);\
-\
-        flerrHandle(flarrstrCstr(errBuf));\
-\
-        flarrFree(&errBuf);\
+flentIOdata flentiodNew(int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
+    flentIOdata iod = {.mode = dataMode, .id = dataId, .data = data, .size = dataSize};
+    return iod;
 }
 
-void flentWriteToComponentOutput(flEntity* contP, flEntity* compP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
-    if(compP->_con != contP){
-        _flentdioReportError(contP, compP, "flentWriteToComponentOutput")
-        return;
-    }
+// #define _flentdioReportError(e1P, e2P, funcName){\
+//         flArray* errBuf = flarrNew(64+sizeof(flentCC_t)*4, sizeof(char));\
+//         flarrstrPush(errBuf, "\nACCv ");\
+//         flarrstrPush(errBuf, funcName);\
+//         flarrstrPush(errBuf, " : ");\
+//         flentccoToStr(e1P->ccode, errBuf);\
+//         flarrstrPush(errBuf, " ");\
+//         flentccoToStr(e2P->ccode, errBuf);\
+// \
+//         flerrHandle(flarrstrCstr(errBuf));\
+// \
+//         flarrFree(&errBuf);\
+// }
 
+void flentWriteToComponentOutput(flEntity* compP, flentIOdata iod){
     flarrSetLength((flArray*)compP->_cin, 0);
 
-    flarrPush( (flArray*)compP->_cin, &dataMode);
-    flarrPushs( (flArray*)compP->_cin, &dataId, sizeof(flentDataID_t));
-    flarrPushs( (flArray*)compP->_cin, data, dataSize);
+    flarrPush( (flArray*)compP->_cin, &iod.mode);
+    flarrPushs( (flArray*)compP->_cin, &iod.id, sizeof(flentDataID_t));
+
+    int8_t defaultData = 0;
+    if(!iod.data){
+        iod.data = &defaultData;
+        iod.size = sizeof(int8_t);
+    }
+    flarrPushs( (flArray*)compP->_cin, iod.data, iod.size);
 }
 
-void flentWriteToControllerOutput(flEntity* compP, flEntity* contP, int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize){
-    if(compP->_con != contP){
-        _flentdioReportError(compP, contP, "flentWriteToControllerOutput")
-        return;
-    }
+void flentWriteToControllerOutput(flEntity* compP, flentIOdata iod){
 
     flarrSetLength( (flArray*)compP->_cout, 0);
 
-    flarrPush( (flArray*)compP->_cout, &dataMode);
-    flarrPushs( (flArray*)compP->_cout, &dataId, sizeof(flentDataID_t));
-    flarrPushs( (flArray*)compP->_cout, data, dataSize);
+    flarrPush( (flArray*)compP->_cout, &iod.mode);
+    flarrPushs( (flArray*)compP->_cout, &iod.id, sizeof(flentDataID_t));
+
+    int8_t defaultData = 0;
+    if(!iod.data){
+        iod.data = &defaultData;
+        iod.size = sizeof(int8_t);
+    }
+    flarrPushs( (flArray*)compP->_cout, iod.data, iod.size);
 
 }
 
-void flentReadFromComponentOutput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
-    if(compP->_con != contP){
-        _flentdioReportError(contP, compP, "flentReadFromComponentOutput")
-        return;
-    }
+void flentReadFromComponentOutput(flEntity* compP, flentIOdata* dest){
     uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cin, 0);
 
-    *dataModeP = *byteBuffer;
-    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
-    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    if(dataSizeP) { *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
+    dest->mode = *byteBuffer;
+    dest->id = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    dest->data = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    dest->size = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
 }
 
-void flentReadFromControllerInput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
-    if(compP->_con != contP){
-        _flentdioReportError(compP, contP, "flentReadFromControllerInput")
-        return;
-    }
+void flentReadFromControllerInput(flEntity* compP, flentIOdata* dest){
     uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cin, 0);
 
-    *dataModeP = *byteBuffer;
-    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
-    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    if(dataSizeP) { *dataSizeP = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
+    dest->mode = *byteBuffer;
+    dest->id = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    dest->data = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    dest->size = compP->_cin->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
 }
 
-void flentReadFromControllerOutput(flEntity* compP, flEntity* contP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
-    if(compP->_con != contP){
-        _flentdioReportError(compP, contP, "flentReadFromControllerOutput")
-        return;
-    }
+void flentReadFromControllerOutput(flEntity* compP, flentIOdata* dest){
     uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cout, 0);
 
-    *dataModeP = *byteBuffer;
-    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
-    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    if(dataSizeP){ *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
+    dest->mode = *byteBuffer;
+    dest->id = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    dest->data = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    dest->size = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) );
 }
 
-void flentReadFromComponentInput(flEntity* contP, flEntity* compP, int8_t* dataModeP, flentDataID_t* dataIdP, void** dataP, flInt_t* dataSizeP){
-    if(compP->_con != contP){
-        _flentdioReportError(contP, compP, "flentReadFromComponentInput")
-        return;
-    }
+void flentReadFromComponentInput(flEntity* compP, flentIOdata* dest){
     uint8_t* byteBuffer = (uint8_t*)flarrGet( (flArray*)compP->_cout, 0);
 
-    *dataModeP = *byteBuffer;
-    *dataIdP = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
-    *dataP = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
-    if(dataSizeP){ *dataSizeP = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); }
+    dest->mode = *byteBuffer;
+    dest->id = *( (flentDataID_t*)(byteBuffer+sizeof(int8_t)) );
+    dest->data = byteBuffer+sizeof(int8_t)+sizeof(flentDataID_t);
+    dest->size = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); 
 }
 
 flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
@@ -189,11 +181,11 @@ const flEntity** flentAddCompPtr(flEntity* contP, const flEntity* compP){
     }
 
     //Link component with controller
-    _flentSetCon(compP, contP);
+    _flentSetController(compP, contP);
 
     if(freeSlotIndex >= 0) return flarrPut( (flArray*)contP->components, freeSlotIndex, compP);
     
-    return flarrPush( (flArray*)contP->components, compP);
+    return flarrPush( (flArray*)contP->components, &compP);
 }
 
 // void flentRemoveCompPtr(flEntity* contP, const flEntity* compP){
@@ -221,7 +213,7 @@ void flentForeach(const flEntity* contP, void (*funcToApply)(flEntity*, void*), 
     flInt_t iniLstackLength = lstack->length;
 
     //Loop through all entities and apply callback
-    flarrPush(lstack, contP);
+    flarrPush(lstack, &contP);
     while(lstack->length != iniLstackLength){
         flEntity* centP = *(flEntity**)flarrPop(lstack);//centP -> controller entity pointer
         if(centP){
@@ -230,7 +222,7 @@ void flentForeach(const flEntity* contP, void (*funcToApply)(flEntity*, void*), 
             ///still be valid after applying callback to their controller.
             if(centP->components){
                 for(flInt_t j = 0; j < centP->components->length; j++){
-                    flarrPush(lstack, *(flEntity**)flarrGet( (flArray*)centP->components, j));
+                    flarrPush(lstack, (flEntity**)flarrGet( (flArray*)centP->components, j));
                 }
             }
 
@@ -260,7 +252,7 @@ static void freeEntity(flEntity* ent, void* otherArgs){
     ///@note $ent->ui2D and $ent->ui3D are components of the current entity($ent) and hence
     ///this function will be called on them later.
     
-    ///@note At this stage $ent->_con no longer exist(ie this function has been called on it)
+    ///@note At this stage $ent->controller no longer exist(ie this function has been called on it)
 
     if(ent->_cin) flarrFree( (flArray**) &ent->_cin );
     if(ent->_cout) flarrFree( (flArray**)&ent->_cout);
