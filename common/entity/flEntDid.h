@@ -4,9 +4,11 @@
 typedef uint32_t flentDataID_t;
 
 #define flentdidNIL       0
-#define flentdidSUM       1
-#define flentdidPRODUCT   2
-#define flentdidNUMBER    3
-#define flentdidRESET     4
+#define flentdidRESULT    1
+#define flentdidNUMBER    2
+#define flentdidRESET     3
+#define flentdidSUM       4
+#define flentdidPRODUCT   5
+#define flentdidQUOTIENT  6
 
 #endif

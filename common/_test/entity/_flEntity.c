@@ -29,20 +29,34 @@ static bool _test_flentNew(){
 
 ///Test entities declarations and implementations
 
-//Adder Entity
-typedef struct{
-    flNumber_t sum;
-}_adderProps;
+static flNumber_t add(flNumber_t a, flNumber_t b){
+    return a+b;
+}
 
-static void adderTick(flEntity* self, flInt_t ct, flInt_t dt, int8_t syscmd, const void* syscmdArgs){
+static flNumber_t multiply(flNumber_t a, flNumber_t b){
+    return a*b;
+}
+
+static flNumber_t divide(flNumber_t a, flNumber_t b){
+    return a/b;
+}
+
+//Operator Entity
+typedef struct{
+    flNumber_t result;
+    flNumber_t (*operate)(flNumber_t a, flNumber_t b);
+}_accOperProps;
+
+static void accOperTick(flEntity* self, flInt_t ct, flInt_t dt, int8_t syscmd, const void* syscmdArgs){
     if(syscmd && syscmd == flentsycCLEANUP){
-        printf("\nAdder entity cleaned up");
+        const char* ename = self->name? self->name : "accOper";
+        printf("\n%s entity cleaned up", ename);
         if(self->props) flmemFree(self->props);
         flentSetProps(self, NULL);
         return;
     }
 
-    _adderProps* adp = (_adderProps*)self->props;
+    _accOperProps* adp = (_accOperProps*)self->props;
 
     flentIOdata cin, cout;
 
@@ -55,40 +69,129 @@ static void adderTick(flEntity* self, flInt_t ct, flInt_t dt, int8_t syscmd, con
 
     switch(cin.mode){
         case flentdmoGET:
-            if(cin.id == flentdidSUM){
-                flentWriteToControllerOutput(self, flentiodNew(flentdmoPOST, flentdidSUM, &adp->sum, sizeof(flNumber_t)));
+            if(cin.id == flentdidRESULT){
+                flentWriteToControllerOutput(self, flentiodNew(flentdmoPOST, flentdidRESULT, &adp->result, sizeof(flNumber_t)));
             }
         break;
 
         case flentdmoPOST:
             if(cin.id == flentdidNUMBER){
-                adp->sum += *(flNumber_t*)cin.data;
+                adp->result = adp->operate(adp->result, *(flNumber_t*)cin.data);
             }else if(cin.id == flentdidRESET){
-                adp->sum = 0;
+                adp->result = 0;
             }
         break;
     }
 }
 
-static flEntity* adderNew(flEntity *controller){
-    _adderProps *adp = flmemMalloc(sizeof(_adderProps));
-    flEntity *adderEnt = flentNew(0, controller, 0);
+static flEntity* accOperNew(flEntity *controller, flNumber_t (*operate)(flNumber_t, flNumber_t)){
+    _accOperProps *adp = flmemMalloc(sizeof(_accOperProps));
+    adp->operate = operate;
 
-    flentSetProps(adderEnt, adp);
+    flEntity *accOperEnt = flentNew(0, controller, 0);
 
-    return adderEnt;
+    flentSetProps(accOperEnt, adp);
+
+    return accOperEnt;
 }
-
-//Multiplier entity
-typedef struct{
-    flNumber_t product;
-}_multiplierProps;
 
 //Calculator entity
 typedef struct{
     flEntity * adder;
     flEntity * multiplier;
-}_calculatorProps;
+    flEntity * divider;
+}_accCalProps;
+
+static inline void accCalRequestCompResult(flEntity *comp){
+    flentWriteToComponentOutput(comp, flentiodNew(flentdmoGET, flentdidRESULT, NULL, 0));
+}
+
+static flEntity* accCalSelectComp(flEntity* self, flentDataID_t dataID){
+    switch(dataID){
+        case flentdidNIL:
+        case flentdidRESULT:
+        case flentdidSUM:
+            return ((_accCalProps*)self->props)->adder;
+        
+        case flentdidPRODUCT:
+            return ((_accCalProps*)self->props)->multiplier;
+        
+        case flentdidQUOTIENT:
+            return ((_accCalProps*)self->props)->divider;
+    }
+}
+
+static void accCalTick(flEntity* self, flInt_t ct, flInt_t dt, int8_t syscmd, const void* syscmdArgs){
+    if(syscmd && syscmd == flentsycCLEANUP){
+        const char* ename = self->name? self->name : "accCal";
+        printf("\n%s entity cleaned up", ename);
+        if(self->props) flmemFree(self->props);
+        flentSetProps(self, NULL);
+        return;
+    }
+
+    _accCalProps* calp = (_accCalProps*)self->props;
+
+    flentIOdata cin, cout;
+
+    flentReadFromControllerOutput(self, &cout);
+    flentReadFromControllerInput(self, &cin);
+    
+    switch(cin.mode){
+        case flentdmoNIL:
+            if(cout.mode){
+                flentWriteToControllerOutput(self, flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0));
+            }
+        break;
+
+        case flentdmoGET:
+            switch(cout.mode){
+                case flentdmoNIL:
+                    accCalRequestCompResult(accCalSelectComp(self, cin.id));
+                    flentWriteToControllerOutput(self, flentiodNew(flentdmoPROCI, flentdidNIL, NULL, 0));
+                break;
+
+                case flentdmoPROCI:{
+                    flentIOdata cmpin;
+                    flentReadFromComponentInput(accCalSelectComp(self, cin.id), &cmpin);
+                    if(cmpin.mode == flentdmoPOST && cmpin.id == flentdidRESULT){
+                        cmpin.id = cin.id;
+                        flentWriteToControllerOutput(self, cmpin);
+                    }
+                }
+                break;
+
+                case flentdmoPOST:
+                    flentWriteToControllerOutput(self, flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0));
+                break;
+            }
+        break;
+
+        case flentdmoPOST:
+            for(int i = 0; i<self->components->length; i++){
+                flEntity *comp = *( (flEntity**)flarrGet(self->components, i) );
+                if(comp) flentWriteToComponentOutput(comp, cin);
+            }
+        break;
+    }
+}
+
+static flEntity* accCalNew(flEntity *controller, flEntity *adder, flEntity *multiplier, flEntity *divider){
+    _accCalProps *acp = flmemMalloc(sizeof(_accCalProps));
+    acp->adder = adder;
+    acp->multiplier = multiplier;
+    acp->divider = divider;
+
+    flEntity *accCalEnt = flentNew(0, controller, 3);
+
+    flentSetProps(accCalEnt, acp);
+
+    flentAddCompPtr(accCalEnt, adder);
+    flentAddCompPtr(accCalEnt, multiplier);
+    flentAddCompPtr(accCalEnt, divider);
+
+    return accCalEnt;
+}
 
 
 bool _flentRunTests(){

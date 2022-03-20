@@ -26,15 +26,21 @@ typedef uint32_t flentCC_t;
  * @brief Command for requesting a particular data.
  */
 #define flentdmoGET                        1
+
+/**
+ * @brief Command to indicate that a component is still processing an input.
+ * 
+ */
+#define flentdmoPROCI                      2
 /**
  * @brief command for updating a particular data, intended to be use 
  * by parent/controller entities only. 
  */
-#define flentdmoSET                        2
+#define flentdmoSET                        3
 /**
  * @brief command for posting notification, intended to be use by both controller and component entity.
  */
-#define flentdmoPOST                       3
+#define flentdmoPOST                       4
 
 ///SYC -> system command
 
