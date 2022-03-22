@@ -120,7 +120,22 @@ void flentReadFromComponentInput(flEntity* compP, flentIOdata* dest){
     dest->size = compP->_cout->length - ( sizeof(int8_t)+sizeof(flentDataID_t) ); 
 }
 
-flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
+void flentClearAllOutputs(flEntity* ent){
+    flentIOdata odat = {.mode = flentdmoNIL};
+
+    //Clear controller output
+    flentReadFromControllerOutput(ent, &odat);
+    if(odat.mode) flentWriteToControllerOutput(ent, flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0));
+
+    //clear components' outputs
+    for(int i = 0; i<ent->components->length; i++){
+        flEntity *comp = *(flEntity**)flarrGet(ent->components, i);
+        flentReadFromComponentOutput(ent, &odat);
+        if(odat.mode) flentWriteToComponentOutput(comp, flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0));
+    }
+}
+
+flEntity* flentNew(flentCC_t ccode, int initialCompCount){
     flEntity* entP = flmemMalloc(sizeof(flEntity));
     if(!entP){
         flerrHandle("\nMEMf flentNew");
@@ -160,7 +175,7 @@ flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount){
     flentSetProps(entP, NULL);
     flentSetTick(entP, NULL);
 
-    flentAddCompPtr(contP, entP);
+    _flentSetController(entP, NULL);
 
     return entP;
 }
@@ -221,7 +236,7 @@ void flentForeach(const flEntity* contP, void (*funcToApply)(flEntity*, void*), 
             ///@note It's the responsibility of the caller to ensure that components entities will
             ///still be valid after applying callback to their controller.
             if(centP->components){
-                for(flInt_t j = 0; j < centP->components->length; j++){
+                for(flInt_t j = centP->components->length-1; j >= 0; j--){ //@note: we want for callbaack to be apply in expected order.
                     flarrPush(lstack, (flEntity**)flarrGet( (flArray*)centP->components, j));
                 }
             }

@@ -32,17 +32,17 @@ struct flEntity{
   /**
    * @brief The 2D ui or form of this entity.
    */
-  const flEntity * const ui2D;
+  flEntity * const ui2D;
 
   /**
    * @brief The 3D ui or form of this entity.
    */
-  const flEntity * const ui3D;
+  flEntity * const ui3D;
 
   /**
    * @brief The controller of this entity(component)
    */
-  const flEntity * const controller;
+  flEntity * const controller;
   /**
    * @brief Input from controller to this entity(component)
    * @note This is an array of bytes: 
@@ -50,7 +50,7 @@ struct flEntity{
    * ->the second ${sizeof(flentDataID_t)} bytes is the id of the input data.
    * ->the interpretation of the remaining set of bytes depends on the entity/component involve.
    */
-  const flArray * const _cin;
+  flArray * const _cin;
   /**
    * @brief Output to controller from this entity(component)
    * This is an array of bytes: 
@@ -58,7 +58,7 @@ struct flEntity{
    * ->the second ${sizeof(flentDataID_t)} bytes is the id of the output data.
    * ->the interpretation of the remaining set of bytes depends on the entity/component involve.
    */
-  const flArray * const _cout;
+  flArray * const _cout;
 
   /**
    * @brief All other specific properties of this entity apart from the ones 
@@ -76,7 +76,7 @@ struct flEntity{
    * that entity will not be consider as component entity. And hence operations such as ticking and 
    * clean up that are performed on component entities will not be perform on such entity.
    */
-  const flArray * const components;
+  flArray * const components;
 
   /**
    * @brief This method gets called by the ticker during every time frame.
@@ -200,16 +200,22 @@ void flentReadFromControllerOutput(flEntity* compP, flentIOdata* dest);
  */
 void flentReadFromComponentInput(flEntity* compP, flentIOdata* dest);
 
+/**
+ * @brief Clear all output buffers associated with the given entity
+ * 
+ * @param ent
+ */
+void flentClearAllOutputs(flEntity* ent);
+
 /*----------FLENTITY UTILITY FUNCTIONS----------*/
 
 /**
  * @brief Create and initialize a new $flEntity interface
  * @param ccode The classification code of the new entity
- * @param contP Pointer to the controller of the new entity
  * @param initialCompCount The initial number of components the new entity will have.
  * @return Pointer to the newly created interface(struct) | NULL if an error(MEMORY) occur.
  */
-flEntity* flentNew(flentCC_t ccode, flEntity* contP, int initialCompCount);
+flEntity* flentNew(flentCC_t ccode, int initialCompCount);
 
 /**
  * @brief Add the given component pointer($compP) to the given controller($contP) if it

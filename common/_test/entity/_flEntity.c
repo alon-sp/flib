@@ -7,11 +7,13 @@ static void defaultTick(flEntity* self, flInt_t ct, flInt_t dt, int8_t syscmd, c
 
 static bool _test_flentNew(){
     flentCC_t cc = 1;
-    flEntity *contP = flentNew(cc, NULL, 1);
+    flEntity *contP = flentNew(cc, 1);
     flentSetTick(contP, defaultTick);
     
-    flEntity* compP = flentNew(cc, contP, 2);
+    flEntity* compP = flentNew(cc, 2);
     flentSetTick(compP, defaultTick);
+
+    flentAddCompPtr(contP, compP);
 
     if(compP->ccode != cc || compP->controller != contP || compP->ui2D || compP->ui3D || 
         compP->_cin->capacity != sizeof(uint8_t)+sizeof(flentDataID_t)+sizeof(void*) ||
@@ -23,6 +25,8 @@ static bool _test_flentNew(){
         }
 
     flentFree(&contP, NULL);
+
+    printf("\n_test_flentNew: TEST OK");
 
     return true;
 }
@@ -84,13 +88,15 @@ static void accOperTick(flEntity* self, flInt_t ct, flInt_t dt, int8_t syscmd, c
     }
 }
 
-static flEntity* accOperNew(flEntity *controller, flNumber_t (*operate)(flNumber_t, flNumber_t)){
+static flEntity* accOperNew(flNumber_t (*operate)(flNumber_t, flNumber_t)){
     _accOperProps *adp = flmemMalloc(sizeof(_accOperProps));
+    adp->result = 1;
     adp->operate = operate;
 
-    flEntity *accOperEnt = flentNew(0, controller, 0);
+    flEntity *accOperEnt = flentNew(0, 0);
 
     flentSetProps(accOperEnt, adp);
+    flentSetTick(accOperEnt, accOperTick);
 
     return accOperEnt;
 }
@@ -176,15 +182,16 @@ static void accCalTick(flEntity* self, flInt_t ct, flInt_t dt, int8_t syscmd, co
     }
 }
 
-static flEntity* accCalNew(flEntity *controller, flEntity *adder, flEntity *multiplier, flEntity *divider){
+static flEntity* accCalNew(flEntity *adder, flEntity *multiplier, flEntity *divider){
     _accCalProps *acp = flmemMalloc(sizeof(_accCalProps));
     acp->adder = adder;
     acp->multiplier = multiplier;
     acp->divider = divider;
 
-    flEntity *accCalEnt = flentNew(0, controller, 3);
+    flEntity *accCalEnt = flentNew(0, 3);
 
     flentSetProps(accCalEnt, acp);
+    flentSetTick(accCalEnt, accCalTick);
 
     flentAddCompPtr(accCalEnt, adder);
     flentAddCompPtr(accCalEnt, multiplier);
@@ -193,9 +200,72 @@ static flEntity* accCalNew(flEntity *controller, flEntity *adder, flEntity *mult
     return accCalEnt;
 }
 
+static bool _test_flEntity(){
+    flEntity *adderEnt = accOperNew( add);
+    flEntity *multEnt = accOperNew(multiply);
+    flEntity *divEnt = accOperNew(divide);
+
+    flEntity *calEnt = accCalNew(adderEnt, multEnt, divEnt);
+
+    //Post some numbers to the calculator
+    #define _tmp_EPSILON 0.000001
+    flNumber_t expectedSum = 1;
+    flNumber_t expectedProduct = 1;
+    flNumber_t expectedQuotient = 1;
+    for(int i = 1; i < 10; i++){
+        flNumber_t data = (flNumber_t)i;
+        expectedSum += data;
+        expectedProduct *= data;
+        expectedQuotient /= data;
+
+        flentIOdata iod = flentiodNew(flentdmoPOST, flentdidNUMBER, &data, sizeof(flNumber_t));
+        flentWriteToComponentOutput(calEnt, iod);
+        flentTick(calEnt, 0, 0, 0, NULL, NULL);
+
+    }
+
+    //Read the accumulated result of each operator from the calculator
+    //SUM
+    flentWriteToComponentOutput(calEnt, flentiodNew(flentdmoGET, flentdidSUM, NULL, 0));
+    flentIOdata calSumIO = {.mode = flentdmoNIL, .id = flentdidNIL};
+    while( !(calSumIO.mode == flentdmoPOST && calSumIO.id == flentdidSUM) ){
+        flentReadFromComponentInput(calEnt, &calSumIO);
+        flentTick(calEnt, 0, 0, 0, NULL, NULL);
+    }
+    if( fabs( *(flNumber_t*)calSumIO.data - expectedSum ) > _tmp_EPSILON){
+        flerrHandle("\nTESf _test_flEntity SUM");
+    }
+
+    //PRODUCT
+    flentWriteToComponentOutput(calEnt, flentiodNew(flentdmoGET, flentdidPRODUCT, NULL, 0));
+    flentIOdata calProdIO = {.mode = flentdmoNIL, .id = flentdidNIL};
+    while( !(calProdIO.mode == flentdmoPOST && calProdIO.id == flentdidPRODUCT) ){
+        flentReadFromComponentInput(calEnt, &calProdIO);
+        flentTick(calEnt, 0, 0, 0, NULL, NULL);
+    }
+    flNumber_t _tmp = *(flNumber_t*)calProdIO.data;
+    if( fabs( *(flNumber_t*)calProdIO.data - expectedProduct ) > _tmp_EPSILON){
+        flerrHandle("\nTESf _test_flEntity PRODUCT");
+    }
+
+    printf("\n_test_flEntity: TEST OK");
+
+    #undef _tmp_EPSILON
+
+    /**
+     * @brief @note The SUM test will pass but the PRODUCT test will fail. This is due to the
+     * fact that $calEnt failed to clear the components' outputs after a POST operation. Other
+     * similar issues associated with entities involved in this test could also contribute to
+     * the failure. I decided to tackle all of these issues and correct them in the next
+     * improved implementation of the flEntity interface.
+     */
+
+    
+}
 
 bool _flentRunTests(){
     _test_flentNew();
+    _test_flEntity();
 
     return true;
 }
