@@ -8,9 +8,9 @@
  * @brief A simple dynamic array container
  */
 typedef struct{
-    const flInt_t length;//The current number of elements in the array
-    const flInt_t capacity;//The number of elements this array can hold without resizing it's buffer
-    const flInt_t elemSize;//Size in bytes per element of $.data
+    const flint_t length;//The current number of elements in the array
+    const flint_t capacity;//The number of elements this array can hold without resizing it's buffer
+    const flint_t elemSize;//Size in bytes per element of $.data
     void* const data;
 }flArray;
 
@@ -21,7 +21,7 @@ typedef struct{
  * @param sizeOfDatatype The size in bytes of the data type of this array
  * @return flArray* on success | NULL if memory allocation fails
  */
-flArray* flarrNew(flInt_t initialCapacity, flInt_t sizeOfDatatype);
+flArray* flarrNew(flint_t initialCapacity, flint_t sizeOfDatatype);
 
 void flarrFree(flArray** flarr);
 
@@ -35,7 +35,7 @@ void flarrFree(flArray** flarr);
  * @param newCapacity 
  * @return true if memory allocation was successful | false otherwise
  */
-bool flarrAllocCapacity(flArray* flarr, flInt_t newCapacity);
+bool flarrAllocCapacity(flArray* flarr, flint_t newCapacity);
 
 /**
  * @note if $newLength is greater than $flarr current capacity, flarrAllocCapacity is called
@@ -44,7 +44,7 @@ bool flarrAllocCapacity(flArray* flarr, flInt_t newCapacity);
  * @param newLength 
  * @return true if length was set | false otherwise
  */
-bool flarrSetLength(flArray* flarr, flInt_t newLength);
+bool flarrSetLength(flArray* flarr, flint_t newLength);
 
 /**
  * @brief Read $flarr->elemSize bytes from $dataBytesPtr and write it to $flarr beginning
@@ -62,7 +62,7 @@ void* flarrPush(flArray* flarr, const void* dataBytesPtr);
  * @param dataBytesPtr 
  * @return void* pointer to the first element of $dataBytesPtr in $flarr | NULL if push failed
  */
-void* flarrPushs(flArray* flarr, const void* dataBytesPtr, flInt_t elemCount);
+void* flarrPushs(flArray* flarr, const void* dataBytesPtr, flint_t elemCount);
 
 /**
  * @brief Pop the element at $flarr[$flarr->length] and decrement $flarr->length
@@ -78,7 +78,7 @@ void* flarrPop(flArray* flarr);
  * @param index 
  * @return pointer to the element at the given index | NULL if index >= $flarr->length
  */
-void* flarrGet(flArray* flarr, flInt_t index);
+void* flarrGet(flArray* flarr, flint_t index);
 
 // /**
 //  * @brief compare each element of $flarr against first $flarr->elemSize bytes of $dataBytesPtr
@@ -97,7 +97,7 @@ void* flarrGet(flArray* flarr, flInt_t index);
  * @param dataBytesPtr 
  * @return pointer to the written element at the given index | NULL if index >= $flarr->length 
  */
-void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr);
+void* flarrPut(flArray* flarr, flint_t index, const void* dataBytesPtr);
 
 /**
  * @brief These micros are not intended to be use directly; if they must be use,

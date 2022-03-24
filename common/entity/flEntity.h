@@ -12,41 +12,41 @@
 
 typedef struct flEntity flEntity;
 typedef struct flentXenv flentXenv;
-typedef struct flIOport flIOport;
+typedef struct flentIOport flentIOport;
 
 /**
  * @brief Represent a port of an entity
  * 
  */
-typedef struct{
+struct flentIOport{
 /**
  * @brief 
  * This is an array of bytes: 
  * ->the first ${sizeof(uint8_t)} bytes is the mode of the output data.
- * ->the second ${sizeof(flentDataID_t)} bytes is the id of the output data.
+ * ->the second ${sizeof(flentdid_t)} bytes is the id of the output data.
  * ->the interpretation of the remaining set of bytes depends on the entity involved.
  */
   flArray * const _obuf;
 
   flEntity * const _entity;
 
-  const flentIOportName_t name;
+  const flentipn_t name;
 
-  flIOport * const _linkedPort;
-}flIOport;
+  flentIOport * const _linkedPort;
+};
 
 /**
- * @brief A utility structure for decoding $flIOport output buffer.
+ * @brief A utility structure for decoding $flentIOport output buffer.
  * 
  */
 typedef struct{
   int8_t mode;
-  flentDataID_t id;
+  flentdid_t id;
   void* data;
-  flInt_t size;
+  flint_t size;
 }flentIOdata;
 
-flentIOdata flentiodNew(int8_t dataMode, flentDataID_t dataId, void* data, flInt_t dataSize);
+flentIOdata flentiodNew(int8_t dataMode, flentdid_t dataId, void* data, flint_t dataSize);
 
 typedef void  (*flentTick_tf)(flEntity* self, void* args);
 typedef void* (*flentGetopp_tf)(int optionalPropID);
@@ -61,7 +61,7 @@ struct flEntity{
    * @brief The classification code of this entity
    *
    */
-  const flentCC_t ccode;
+  const flentcco_t ccode;
 
   /**
    * @brief A c-string representing the name of this entity
@@ -87,16 +87,14 @@ struct flEntity{
    * @brief This method gets called by the ticker during every time frame.
    * It's intended that an entity update it's state only during this function call
    * @param self
-   * @param args:flEntityTickMethodArg -> Arguments passed from the ticker to this entity.
+   * @param args:flentTickArg -> additional arguments passed from the ticker to this entity.
    */
   void (* const tick)(flEntity* self, void* args);
   
   /**
-   * @brief This method should be implemented to get optional properties of
-   * this interface that have been defined on this entity.
-   * @param optionalPropID The id of the optional property to retrieve.
+   * @brief This method should be implemented to handle system's commands
    */
-  void* (* const getOpp)(int optionalPropID);
+  void* (* const hscmd)(int cmd, void *args);
   
 };
 
@@ -106,19 +104,13 @@ struct flEntity{
 typedef struct{
 
   //The time in milliseconds of the latest call of the tick method of the ticker
-  flInt_t ct;
+  flint_t ct;
 
   //The time difference in milliseconds of the latest call and the previous 
   //call of the tick method of the ticker
-  flInt_t dt;
+  flint_t dt;
 
-  //Command passed from system to the target entity
-  int8_t syscmd;
-
-  //Arguments for the given system command.
-  const void* syscmdArgs;
-
-}flEntityTickMethodArg;
+}flentTickArg;
 
 /*----------SETTERS----------*/
 
@@ -129,7 +121,7 @@ typedef struct{
  */
 bool flentSetName(flEntity* ent, const char* namestr);
 
-#define  flentSetCcode(ent, _ccode)      *( (flentCC_t*)(&ent->ccode) )    = _ccode
+#define  flentSetCcode(ent, _ccode)      *( (flentcco_t*)(&ent->ccode) )    = _ccode
 
 #define _flentSetName(ent, _namestr)     *( (char**)(&ent->name)      )    = _namestr
 
@@ -152,6 +144,6 @@ bool flentSetName(flEntity* ent, const char* namestr);
  * @param initialPortCount The initial number of io ports the new entity will have.
  * @return Pointer to the newly created interface(struct) | NULL if an error(MEMORY) occur.
  */
-flEntity* flentNew(flentXenv *xenv, flentCC_t ccode, int initialPortCount);
+flEntity* flentNew(flentXenv *xenv, flentcco_t ccode, int initialPortCount);
 
 #endif//FLENTITYHEADERH_INCLUDED

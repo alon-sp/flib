@@ -2,7 +2,7 @@
 #define FLENTIPNHEADERH_INCLUDED
     #include<stdint.h>
 
-    typedef uint32_t flentIOportName_t;
+    typedef uint32_t flentipn_t;
     
     #define flentipnNIL_          0
     #define flentipnMAIN          1

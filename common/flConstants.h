@@ -5,15 +5,16 @@
 #include<stdbool.h>
 
 //fl number types
-typedef int64_t flInt_t;
-typedef float flFloat_t;
-typedef float flNumber_t;
+typedef int64_t flint_t;
+typedef float flflt_t;
+typedef float flnum_t;
 
-typedef uint32_t flentCC_t;
+typedef uint32_t flentcco_t;
 
 ///fl entity
 //----------
 
+typedef int8_t flentdmo_t;
 ///@note flentdmo -> fl Entity Data Mode 
 
 /**
@@ -42,6 +43,7 @@ typedef uint32_t flentCC_t;
  */
 #define flentdmoPOST                       4
 
+typedef int8_t flentsyc_t;
 ///SYC -> system command
 
 /**

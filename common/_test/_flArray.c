@@ -33,7 +33,7 @@ static bool _flarrTestPush(){
 }
 
 static bool _flarrTestSetLength(){
-    flArray* nums = flarrNew(10, sizeof(flInt_t));
+    flArray* nums = flarrNew(10, sizeof(flint_t));
     flarrSetLength(nums, 0);
     flarrSetLength(nums, 5);
     if(nums->length != 5){

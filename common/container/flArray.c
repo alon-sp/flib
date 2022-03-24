@@ -2,23 +2,23 @@
 #include"../fl.h"
 #include"flArray.h"
 
-inline static void _flarrSetLength(flArray* arr, flInt_t _length){
-    *( (flInt_t*)(&arr->length) ) = _length;
+inline static void _flarrSetLength(flArray* arr, flint_t _length){
+    *( (flint_t*)(&arr->length) ) = _length;
 }
 
-inline static void _flarrSetCapacity(flArray* arr, flInt_t _capacity){
-    *( (flInt_t*)(&arr->capacity) ) = _capacity;
+inline static void _flarrSetCapacity(flArray* arr, flint_t _capacity){
+    *( (flint_t*)(&arr->capacity) ) = _capacity;
 }
 
-inline static void _flarrSetElemSize(flArray* arr, flInt_t _elemSize){
-    *( (flInt_t*)(&arr->elemSize) ) = _elemSize;
+inline static void _flarrSetElemSize(flArray* arr, flint_t _elemSize){
+    *( (flint_t*)(&arr->elemSize) ) = _elemSize;
 }
 
 inline static void _flarrSetData(flArray* arr, void* _data){
     *( (void**)(&arr->data) ) = _data;
 }
 
-bool flarrAllocCapacity(flArray* arr, flInt_t newCapacity){
+bool flarrAllocCapacity(flArray* arr, flint_t newCapacity){
     if(newCapacity <= 0) newCapacity = 1;
 
     void* newData = flmemRealloc(arr->data, newCapacity*arr->elemSize);
@@ -34,7 +34,7 @@ bool flarrAllocCapacity(flArray* arr, flInt_t newCapacity){
     return true;
 }
 
-bool flarrSetLength(flArray* arr, flInt_t newLength){
+bool flarrSetLength(flArray* arr, flint_t newLength){
     if(newLength < 0) newLength = 0;
 
     if(newLength >= arr->capacity && !flarrAllocCapacity(arr, newLength)) return NULL;
@@ -42,7 +42,7 @@ bool flarrSetLength(flArray* arr, flInt_t newLength){
     _flarrSetLength(arr, newLength);
 }
 
-flArray* flarrNew(flInt_t initialCapacity, flInt_t sizeOfDatatype){
+flArray* flarrNew(flint_t initialCapacity, flint_t sizeOfDatatype){
     flArray* arr = (flArray*)flmemMalloc(sizeof(flArray));
 
     if(!arr){
@@ -89,7 +89,7 @@ void* flarrPush(flArray* flarr, const void* dataBytesPtr){
     return _flarrGet(flarr, flarr->length-1);
 }
 
-void* flarrPushs(flArray* flarr, const void* dataBytesPtr, flInt_t elemCount){
+void* flarrPushs(flArray* flarr, const void* dataBytesPtr, flint_t elemCount){
     if(flarr->length+elemCount >= flarr->capacity){
         if(!flarrAllocCapacity(flarr, flarr->capacity*2 + elemCount)) return NULL;
     }
@@ -103,7 +103,7 @@ void* flarrPop(flArray* flarr){
     return _flarrPop(flarr);
 }
 
-void* flarrGet(flArray* flarr, flInt_t index){
+void* flarrGet(flArray* flarr, flint_t index){
     if(index < 0) index = 0;
 
     if(index >= flarr->length){
@@ -114,7 +114,7 @@ void* flarrGet(flArray* flarr, flInt_t index){
 }
 
 // void* flarrFind(flArray* flarr, const void * dataBytesPtr){
-//     for(flInt_t i = 0; i<flarr->length; i++){
+//     for(flint_t i = 0; i<flarr->length; i++){
 //         if(memcmp(dataBytesPtr, _flarrGet(flarr, i), flarr->elemSize) == 0 ){
 //             return _flarrGet(flarr, i);
 //         }
@@ -123,7 +123,7 @@ void* flarrGet(flArray* flarr, flInt_t index){
 //     return NULL;
 // }
 
-void* flarrPut(flArray* flarr, flInt_t index, const void* dataBytesPtr){
+void* flarrPut(flArray* flarr, flint_t index, const void* dataBytesPtr){
     if(index < 0) index = 0;
 
     if(index >= flarr->length){

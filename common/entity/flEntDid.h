@@ -1,7 +1,7 @@
 #ifndef FLENTDIDHEADERH_INCLUDED
 #define FLENTDIDHEADERH_INCLUDED
 
-typedef uint32_t flentDataID_t;
+typedef uint32_t flentdid_t;
 
 #define flentdidNIL_      0
 #define flentdidRESULT    1
