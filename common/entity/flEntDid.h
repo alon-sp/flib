@@ -3,7 +3,7 @@
 
 typedef uint32_t flentDataID_t;
 
-#define flentdidNIL       0
+#define flentdidNIL_      0
 #define flentdidRESULT    1
 #define flentdidNUMBER    2
 #define flentdidRESET     3
