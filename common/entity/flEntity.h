@@ -36,7 +36,14 @@ struct flentIOport{
   flentIOport * const _linkedPort;
 };
 
-void flentiopWrite(flentIOport *iop, flentIOdata iodata);
+/**
+ * @brief Connect $port with the given port($targetPort)
+ * @param port 
+ * @param targetPort 
+ */
+void flentiopLink(flentIOport* port, flentIOport* targetPort);
+
+flentIOport* flentiopUnlink(flentIOport* port);
 
 /**
  * @brief A utility structure for decoding $flentIOport output buffer.
@@ -51,7 +58,7 @@ struct flentIOdata{
 
 flentIOdata flentiodNew(int8_t dataMode, flentdid_t dataId, void* data, flint_t dataSize);
 
-typedef void  (*flentTick_tf)(flEntity* self, void* args);
+typedef void  (*flentTick_tf)(flEntity* self);
 typedef void* (*flentsch_tf)(flentsyc_t cmd, void *args);
 
 /**
@@ -84,11 +91,13 @@ struct flEntity{
   flArray * const ioports;
 
   /**
-   * @brief This method gets called by the ticker during every time frame.
+   * @brief This method gets called by the ticker during every time frame if tick is enable.
    * It's intended that an entity update it's state only during this function call
    * @param self
    */
   void (* const tick)(flEntity* self);
+
+  const bool tickEnable;
   
   /**
    * @brief This method should be implemented to handle commands from system(flEntity module)
@@ -123,7 +132,12 @@ typedef struct{
  */
 bool flentSetName(flEntity* ent, const char* namestr);
 
-#define  flentSetCcode(ent, _ccode)      *( (flentcco_t*)(&ent->ccode) )    = _ccode
+#define flentEnableTick(ent)             *( (bool*)(&ent->tickEnable) )    = true
+#define flentDisableTick(ent)            *( (bool*)(&ent->tickEnable) )    = false
+
+#define  flentSetCcode(ent, _ccode)      *( (flentcco_t*)(&ent->ccode) )   = _ccode
+
+#define _flentSetXenv(ent, _xenv)        *( (flentXenv **)(&ent->xenv) )   = _xenv
 
 #define _flentSetName(ent, _namestr)     *( (char**)(&ent->name)      )    = _namestr
 
@@ -135,7 +149,6 @@ bool flentSetName(flEntity* ent, const char* namestr);
 
 #define  flentSetHscmd(ent, sch)         *( (flentsch_tf *)(&ent->hscmd) ) = sch
 
-
 /*----------FLENTITY FUNCTIONS----------*/
 
 /**
@@ -146,7 +159,14 @@ bool flentSetName(flEntity* ent, const char* namestr);
  * @param initialPortCount The initial number of io ports the new entity will have.
  * @return Pointer to the newly created interface(struct) | NULL if an error(MEMORY) occur.
  */
-flEntity* flentNew(flentXenv xenv, flentcco_t ccode, int initialPortCount);
+flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount);
+
+/**
+ * @brief 
+ * 
+ * @param ent 
+ */
+void flentFree(flEntity* ent);
 
 struct flentXenv{
   flArray * const entities;
@@ -154,10 +174,10 @@ struct flentXenv{
   const flint_t tickCT;
   const flint_t tickDT;
 
-  void (* const tick)(flint_t ct, flint_t dt);
+  void (* const tick)(flentXenv* xenv, flint_t ct, flint_t dt);
 
-  bool (* const addEntity)(flEntity* ent);
-  bool (* const removeEntity)(flEntity* ent);
+  bool (* const addEntity)(flentXenv* xenv, flEntity* ent);
+  bool (* const removeEntity)(flentXenv* xenv, flEntity* ent);
 
   flint_t (* const millis)();
 };
