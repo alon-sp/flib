@@ -13,6 +13,7 @@
 typedef struct flEntity flEntity;
 typedef struct flentXenv flentXenv;
 typedef struct flentIOport flentIOport;
+typedef struct flentIOdata flentIOdata;
 
 /**
  * @brief Represent a port of an entity
@@ -35,21 +36,23 @@ struct flentIOport{
   flentIOport * const _linkedPort;
 };
 
+void flentiopWrite(flentIOport *iop, flentIOdata iodata);
+
 /**
  * @brief A utility structure for decoding $flentIOport output buffer.
  * 
  */
-typedef struct{
+struct flentIOdata{
   int8_t mode;
   flentdid_t id;
   void* data;
   flint_t size;
-}flentIOdata;
+};
 
 flentIOdata flentiodNew(int8_t dataMode, flentdid_t dataId, void* data, flint_t dataSize);
 
 typedef void  (*flentTick_tf)(flEntity* self, void* args);
-typedef void* (*flentGetopp_tf)(int optionalPropID);
+typedef void* (*flentsch_tf)(flentsyc_t cmd, void *args);
 
 /**
  * @brief
@@ -57,15 +60,14 @@ typedef void* (*flentGetopp_tf)(int optionalPropID);
  * -Each instance of this interface is the brain of a given process or activity.
  */
 struct flEntity{
-  /**
-   * @brief The classification code of this entity
-   *
-   */
+
+  //The classification code of this entity
   const flentcco_t ccode;
 
-  /**
-   * @brief A c-string representing the name of this entity
-   */
+  //The environment in which the new entity will be executed
+  flentXenv * const xenv;
+
+  //A c-string representing the name of this entity
   const char* const name;
 
   /**
@@ -78,23 +80,23 @@ struct flEntity{
    */
   void * const props;
 
-  /**
-   * @brief An array of pointers to all ports of this entity.
-   */
+  //An array of pointers to all ports of this entity.
   flArray * const ioports;
 
   /**
    * @brief This method gets called by the ticker during every time frame.
    * It's intended that an entity update it's state only during this function call
    * @param self
-   * @param args:flentTickArg -> additional arguments passed from the ticker to this entity.
    */
-  void (* const tick)(flEntity* self, void* args);
+  void (* const tick)(flEntity* self);
   
   /**
-   * @brief This method should be implemented to handle system's commands
+   * @brief This method should be implemented to handle commands from system(flEntity module)
+   * @param cmd The system command
+   * @param args Arguments for the given commands
+   * @return The result of executing the given command
    */
-  void* (* const hscmd)(int cmd, void *args);
+  void* (* const hscmd)(flentsyc_t cmd, void *args);
   
 };
 
@@ -131,19 +133,33 @@ bool flentSetName(flEntity* ent, const char* namestr);
 
 #define  flentSetTick(ent, _tick)        *( (flentTick_tf *)(&ent->tick) ) = _tick
 
-#define  flentSetGetOpp(ent, oppG)       *( (flentGetopp_tf *)(&ent->getOpp) ) = oppG
+#define  flentSetHscmd(ent, sch)         *( (flentsch_tf *)(&ent->hscmd) ) = sch
 
 
 /*----------FLENTITY FUNCTIONS----------*/
 
 /**
- * @brief Create and initialize a new $flEntity interface and add it to the given environment
- * if it($xenv) is not NULL.
+ * @brief Create and initialize a new $flEntity interface. The newly created entity is added
+ * to the given execution environment($xenv) if it($xenv) is not NULL.
  * @param xenv The environment in which the new entity will be executed
  * @param ccode The classification code of the new entity
  * @param initialPortCount The initial number of io ports the new entity will have.
  * @return Pointer to the newly created interface(struct) | NULL if an error(MEMORY) occur.
  */
-flEntity* flentNew(flentXenv *xenv, flentcco_t ccode, int initialPortCount);
+flEntity* flentNew(flentXenv xenv, flentcco_t ccode, int initialPortCount);
+
+struct flentXenv{
+  flArray * const entities;
+
+  const flint_t tickCT;
+  const flint_t tickDT;
+
+  void (* const tick)(flint_t ct, flint_t dt);
+
+  bool (* const addEntity)(flEntity* ent);
+  bool (* const removeEntity)(flEntity* ent);
+
+  flint_t (* const millis)();
+};
 
 #endif//FLENTITYHEADERH_INCLUDED
