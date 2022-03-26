@@ -67,16 +67,15 @@ flArray* flarrNew(flint_t initialCapacity, flint_t sizeOfDatatype){
     return arr;
 }
 
-void flarrFree(flArray** flarr){
-    if(!(flarr && *flarr)) return;
+void flarrFree(flArray* flarr){
+    if(!flarr) return;
 
-    if((*flarr)->data){
-        flmemFree((*flarr)->data);
-        _flarrSetData(*flarr, NULL);
+    if(flarr->data){
+        flmemFree(flarr->data);
+        _flarrSetData(flarr, NULL);
     }
 
-    flmemFree(*flarr);
-    *flarr = NULL;
+    flmemFree(flarr);
 }
 
 void* flarrPush(flArray* flarr, const void* dataBytesPtr){

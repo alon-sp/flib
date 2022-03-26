@@ -25,7 +25,7 @@ static bool _flarrTestPush(){
             return false;
         }
     }
-    flarrFree(&foos);
+    flarrFree(foos);
 
     printf("\n_flarrTestPush: TEST OK");
 
@@ -40,7 +40,7 @@ static bool _flarrTestSetLength(){
         flerrHandle("\nTESf _flarrTestSetLength: Test Failed !1");
     }
 
-    flarrFree(&nums);
+    flarrFree(nums);
 
     printf("\n_flarrTestSetLength: TEST OK");
 
@@ -62,7 +62,7 @@ static bool _flarrTestPut(){
         flerrHandle("\nTESf _flarrTestPut: Test Failed !1");
     }
 
-    flarrFree(&str);
+    flarrFree(str);
 
     printf("\n_flarrTestPut: TEST OK");
 
@@ -79,7 +79,7 @@ static bool _flarrstrTestPush(){
         flerrHandle("\nTESf _flarrstrTestPush: Test Failed !1");
     }
 
-    flarrFree(&str);
+    flarrFree(str);
 
     printf("\n_flarrstrTestPush: TEST OK");
 
@@ -100,7 +100,7 @@ static bool _flarrstrTestPop(){
         flerrHandle("\nTESf _flarrstrTestPop: Test Failed !1");
     }
 
-    flarrFree(&str);
+    flarrFree(str);
 
     printf("\n_flarrstrTestPop: TEST OK");
 
@@ -123,7 +123,7 @@ static bool _flarrTestPushs(){
         }
     }
 
-    flarrFree(&intArr);
+    flarrFree(intArr);
 
     printf("\n_flarrTestPushs: TEST OK");
 

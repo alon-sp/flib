@@ -23,7 +23,7 @@ typedef struct{
  */
 flArray* flarrNew(flint_t initialCapacity, flint_t sizeOfDatatype);
 
-void flarrFree(flArray** flarr);
+void flarrFree(flArray* flarr);
 
 /**
  * @brief Resize the internal data buffer of $flarr to $flarr->elemSize * $newCapacity
