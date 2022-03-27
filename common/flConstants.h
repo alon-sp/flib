@@ -5,6 +5,7 @@
 #include<stdbool.h>
 
 //fl number types
+typedef uint8_t flbyt_t;
 typedef int64_t flint_t;
 typedef float flflt_t;
 typedef float flnum_t;

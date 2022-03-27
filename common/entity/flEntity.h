@@ -28,16 +28,16 @@ struct flentIOport{
  * ->the interpretation of the remaining set of bytes depends on the entity involved.
  */
   flArray * const _obuf;
-  #define _flentiopSetObuf(iop, obuf) *( (flArray**)(&iop->_obuf) ) = obuf
+  #define _flentiopSetObuf(iop, obuf) *( (flArray**)(&(iop)->_obuf) ) = obuf
 
   flEntity * const entity;
-  #define flentiopSetEntity(iop, ent) *( (flEntity**)(&iop->entity) ) = ent
+  #define flentiopSetEntity(iop, ent) *( (flEntity**)(&(iop)->entity) ) = ent
 
   const flentipn_t name;
-  #define flentiopSetName(iop, _name) *( (flentipn_t*)(&iop->name) ) = _name
+  #define flentiopSetName(iop, _name) *( (flentipn_t*)(&(iop)->name) ) = _name
 
   flentIOport * const _linkedPort;
-  #define _flentiopSetlinkedPort(iop, lport) *( (flentIOport**)(&iop->_linkedPort) ) = lport
+  #define _flentiopSetlinkedPort(iop, lport) *( (flentIOport**)(&(iop)->_linkedPort) ) = lport
 
 };
 
@@ -51,6 +51,13 @@ struct flentIOport{
 flentIOport* flentiopNew(flentipn_t ipname, flEntity* ent, flentIOport* targetPort);
 
 /**
+ * @brief Cleanup the memory associated with $iop
+ * 
+ * @param iop A pointer that was obtained through $flentiopNew
+ */
+void flentiopFree(flentIOport* iop);
+
+/**
  * @brief Create a connection between the two given ports
  * 
  * @param port1 
@@ -60,10 +67,20 @@ void flentiopLink(flentIOport* port1, flentIOport* port2);
 
 /**
  * @brief Break the connection between the given port and it's target port
- * @param port 
- * @return pointer to the linked port of $port before the unlink operation
+ * @param iop 
+ * @return pointer to the linked port of $iop before the unlink operation
  */
-flentIOport* flentiopUnlink(flentIOport* port);
+flentIOport* flentiopUnlink(flentIOport* iop);
+
+//Write the given io data($iodata) to the output buffer of the given port($iop)
+#define flentiopWrite(iop, iodata) flentiodEncode(iodata, iop->_obuf)
+
+//Read the input of the given port
+#define flentiopReadInput(iop) (iop->_linkedPort)?\
+    flentiodDecodeBuffer(iop->_linkedPort->_obuf): flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0)
+
+//Read the output of the given port
+#define flentiopReadOutput(iop) flentiodDecodeBuffer(iop->_obuf)
 
 /**
  * @brief A utility structure for decoding $flentIOport output buffer.
@@ -78,6 +95,23 @@ struct flentIOdata{
 
 flentIOdata flentiodNew(int8_t dataMode, flentdid_t dataId, void* data, flint_t dataSize);
 
+/**
+ * @brief Encode the given I/O data struct into the destination array buffer($destArrbuf)
+ * assuming $destArrbuf is an output buffer of a port @see flentIOport.
+ * @note The destination buffer's length is reset to zero before the write operation.
+ * @param iod 
+ * @param destArrbuf 
+ */
+void flentiodEncode(flentIOdata iod, flArray* destArrbuf);
+
+/**
+ * @brief Decode the target buffer assuming it's an output buffer of a port @see flentIOport
+ * 
+ * @param arrBuf An output buffer of a port($flentIOport)
+ * @return The decoded data
+ */
+flentIOdata flentiodDecode(flArray* arrBuf);
+
 typedef void  (*flentTick_tf)(flEntity* self);
 typedef void* (*flentsch_tf)(flentsyc_t cmd, void *args);
 
@@ -90,15 +124,15 @@ struct flEntity{
 
   //The classification code of this entity
   const flentcco_t ccode;
-  #define  flentSetCcode(ent, _ccode) *( (flentcco_t*)(&ent->ccode) ) = _ccode
+  #define  flentSetCcode(ent, _ccode) *( (flentcco_t*)(&(ent)->ccode) ) = _ccode
 
   //The environment in which the new entity will be executed
   flentXenv * const xenv;
-  #define _flentSetXenv(ent, _xenv) *( (flentXenv **)(&ent->xenv) ) = _xenv
+  #define _flentSetXenv(ent, _xenv) *( (flentXenv **)(&(ent)->xenv) ) = _xenv
 
   //A c-string representing the name of this entity
   const char* const name;
-  #define _flentSetName(ent, _namestr) *( (char**)(&ent->name) ) = _namestr
+  #define _flentSetName(ent, _namestr) *( (char**)(&(ent)->name) ) = _namestr
 
   /**
    * @brief All other specific properties of this entity apart from the ones 
@@ -109,11 +143,11 @@ struct flEntity{
    * the sytem and are automatically cleaned up when $flentFree is called on this entity.
    */
   void * const props;
-  #define  flentSetProps(ent, _props) *( (void**)(&ent->props) ) = _props
+  #define  flentSetProps(ent, _props) *( (void**)(&(ent)->props) ) = _props
 
   //An array of pointers to all ports of this entity.
   flArray * const ioports;
-  #define _flentSetIOports(ent, _ioports) *( (flArray **)(&ent->ioports) ) = _ioports
+  #define _flentSetIOports(ent, _ioports) *( (flArray **)(&(ent)->ioports) ) = _ioports
 
   /**
    * @brief This method gets called by the ticker during every time frame if tick is enable.
@@ -121,11 +155,11 @@ struct flEntity{
    * @param self
    */
   void (* const tick)(flEntity* self);
-  #define flentSetTick(ent, _tick) *( (flentTick_tf *)(&ent->tick) ) = _tick
+  #define flentSetTick(ent, _tick) *( (flentTick_tf *)(&(ent)->tick) ) = _tick
 
   const bool tickEnable;
-  #define flentEnableTick(ent)  *( (bool*)(&ent->tickEnable) )  = true
-  #define flentDisableTick(ent) *( (bool*)(&ent->tickEnable) )  = false
+  #define flentEnableTick(ent)  *( (bool*)(&(ent)->tickEnable) )  = true
+  #define flentDisableTick(ent) *( (bool*)(&(ent)->tickEnable) )  = false
   
   /**
    * @brief This method should be implemented to handle commands from system(flEntity module)
@@ -134,7 +168,7 @@ struct flEntity{
    * @return The result of executing the given command
    */
   void* (* const hscmd)(flentsyc_t cmd, void *args);
-  #define flentSetHscmd(ent, sch) *( (flentsch_tf *)(&ent->hscmd) ) = sch
+  #define flentSetHscmd(ent, sch) *( (flentsch_tf *)(&(ent)->hscmd) ) = sch
   
 };
 
@@ -159,11 +193,36 @@ bool flentSetName(flEntity* ent, const char* namestr);
 flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount);
 
 /**
- * @brief 
- * 
+ * @brief Free the memory associated with the given entity
+ * @note cleanup operation should be perform on $ent->props before calling this method
  * @param ent 
  */
 void flentFree(flEntity* ent);
+
+/**
+ * @brief Add the given port to $ent
+ * @note If $port already exist in $ent, nothing happens
+ * @param ent 
+ * @param port
+ * @return true on success | false on failure 
+ */
+bool flentAddPort(flEntity* ent, flentIOport* port);
+
+/**
+ * @brief Remove the given port from $ent if found
+ * @note This method does not free the memory associated with the port,
+ * it simply remove and the detach the given port from the entity if found.
+ * @param ent 
+ * @param port 
+ */
+void flentRemovePort(flEntity* ent, flentIOport* port);
+
+/**
+ * @brief Remove the given port if found and free the memory associated with it($port)
+ * @param ent 
+ * @param port 
+ */
+void flentDeletePort(flEntity* ent, flentIOport* port);
 
 struct flentXenv{
   flArray * const entities;
@@ -180,7 +239,7 @@ struct flentXenv{
   bool (* const addEntity)(flentXenv* xenv, flEntity* ent);
   bool (* const removeEntity)(flentXenv* xenv, flEntity* ent);
 
-  flint_t (* const millis)();
+  // flint_t (* const millis)();
 };
 
 #endif//FLENTITYHEADERH_INCLUDED

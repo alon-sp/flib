@@ -20,28 +20,75 @@ static void* flentdfnHscmd(flentsyc_t cmd, void *args){
 flentIOport* flentiopNew(flentipn_t ipname, flEntity* ent, flentIOport* targetPort){
     flentIOport* iop = flmemMalloc(sizeof(flentIOport));
 
+    flArray* outputBuffer = flarrNew(sizeof(flbyt_t)+sizeof(flentdid_t)+sizeof(void*), sizeof(flbyt_t));
+    _flentiopSetObuf(iop, outputBuffer);
+
     flentiopSetName(iop, ipname);
     flentiopSetEntity(iop, ent);
 
-    if(targetPort){
-        flentiopLink(iop, targetPort);
-    }else _flentiopSetlinkedPort(iop, NULL);
+    
+    flentiopLink(iop, targetPort);
+}
+
+void flentiopFree(flentIOport* iop){
+    if(!iop) return;
+
+    if(iop->_obuf){
+        flarrFree(iop->_obuf);
+        _flentiopSetObuf(iop, NULL);
+    }
+
+    flmemFree(iop);
 }
 
 void flentiopLink(flentIOport* port1, flentIOport* port2){
-    _flentiopSetlinkedPort(port1, port2);
-    _flentiopSetlinkedPort(port2, port1);
+    if(port1)_flentiopSetlinkedPort(port1, port2);
+    if(port2)_flentiopSetlinkedPort(port2, port1);
 }
 
-flentIOport* flentiopUnlink(flentIOport* port){
-    if(!port->_linkedPort) return NULL;
+flentIOport* flentiopUnlink(flentIOport* iop){
+    if( !(iop && iop->_linkedPort) ) return NULL;
 
-    flentIOport* linkedPort = port->_linkedPort;
+    flentIOport* linkedPort = iop->_linkedPort;
 
     _flentiopSetlinkedPort(linkedPort, NULL);
-    _flentiopSetlinkedPort(port, NULL);
+    _flentiopSetlinkedPort(iop, NULL);
 
     return linkedPort;
+}
+
+flentIOdata flentiodNew(int8_t dataMode, flentdid_t dataId, void* data, flint_t dataSize){
+    flentIOdata iod = {.mode = dataMode, .id = dataId, .data = data, .size = dataSize};
+    return iod;
+}
+
+void flentiodEncode(flentIOdata iod, flArray* destArrbuf){
+
+    flarrSetLength( destArrbuf, 0 );
+
+    flarrPush( destArrbuf, &iod.mode);
+    flarrPushs( destArrbuf, &iod.id, sizeof(flentdid_t) );
+
+    flbyt_t defaultData = 0;
+    if(!iod.data){
+        iod.data = &defaultData;
+        iod.size = sizeof(flbyt_t);
+    }
+    flarrPushs( destArrbuf, iod.data, iod.size );
+
+}
+
+flentIOdata flentiodDecode(flArray* arrBuf){
+    flentIOdata iod;
+
+    flbyt_t* byteBuffer = (flbyt_t*)flarrGet( arrBuf, 0);
+
+    iod.mode = *byteBuffer;
+    iod.id = *( (flentdid_t*)(byteBuffer+sizeof(flbyt_t)) );
+    iod.data = byteBuffer+sizeof(flbyt_t)+sizeof(flentdid_t);
+    iod.size = arrBuf->length - ( sizeof(flbyt_t)+sizeof(flentdid_t) );
+
+    return iod;
 }
 
 /*----------flEntity functions---------*/
@@ -82,6 +129,48 @@ flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount){
 
     _flentSetXenv(ent, xenv);
     if(xenv) xenv->addEntity(xenv, ent);
+}
+
+/**
+ * @brief Search for $port in $ent
+ * @param ent 
+ * @param port 
+ * @return pointer to $port in the given entity($ent) | NULL if $port was not found in $ent
+ * @note if $port is NULL, the location of the first NULL port in $ent will be returned | NULL
+ */
+static flentIOport** flentFindPort(flEntity* ent, flentIOport* port){
+    if(!ent->ioports) return NULL;
+    
+    for(int i = 0; i<ent->ioports->length; i++){
+        flentIOport** p = (flentIOport**)flarrGet(ent->ioports, i);
+        if(*p == port) return p;
+    }
+    
+    return NULL;
+}
+
+bool flentAddPort(flEntity* ent, flentIOport* port){
+    if(!ent->ioports) _flentInitializeIOports(ent, 2);
+    
+    flentIOport** ploc = flentFindPort(ent, port);
+
+    if(ploc) *ploc = port;
+    else return flarrPush(ent->ioports, port)? true : false;
+
+    return true;
+}
+
+void flentRemovePort(flEntity* ent, flentIOport* port){
+    flentIOport** ploc = flentFindPort(ent, port);
+    if(ploc){
+        flentiopSetEntity(*ploc, NULL);
+        *ploc = NULL;
+    }
+}
+
+void flentDeletePort(flEntity* ent, flentIOport* port){
+    flentRemovePort(ent, port);
+    flentiopFree(port);
 }
 
 #undef _flentInitializeIOports
