@@ -12,4 +12,8 @@
 #define flmemFree(mptr) free(mptr)
 #define flmemRealloc(mptr, nbytes) realloc(mptr, nbytes)
 
+#define flMillis() 0
+
+#define fltmeMillis() flMillis()
+
 #endif//FLHEADERH_INCLUDED

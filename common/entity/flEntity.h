@@ -51,7 +51,7 @@ struct flentIOport{
 flentIOport* flentiopNew(flentipn_t ipname, flEntity* ent, flentIOport* targetPort);
 
 /**
- * @brief Cleanup the memory associated with $iop
+ * @brief unlink $iop and clean up the memory associated with it
  * 
  * @param iop A pointer that was obtained through $flentiopNew
  */
@@ -112,8 +112,8 @@ void flentiodEncode(flentIOdata iod, flArray* destArrbuf);
  */
 flentIOdata flentiodDecode(flArray* arrBuf);
 
-typedef void  (*flentTick_tf)(flEntity* self);
-typedef void* (*flentsch_tf)(flentsyc_t cmd, void *args);
+typedef void  (*flentTick_tf)(flEntity* self, flentXenv* xenv);
+typedef void* (*flentHscmd_tf)(flentsyc_t cmd, void *args);
 
 /**
  * @brief
@@ -125,10 +125,6 @@ struct flEntity{
   //The classification code of this entity
   const flentcco_t ccode;
   #define  flentSetCcode(ent, _ccode) *( (flentcco_t*)(&(ent)->ccode) ) = _ccode
-
-  //The environment in which the new entity will be executed
-  flentXenv * const xenv;
-  #define _flentSetXenv(ent, _xenv) *( (flentXenv **)(&(ent)->xenv) ) = _xenv
 
   //A c-string representing the name of this entity
   const char* const name;
@@ -153,8 +149,9 @@ struct flEntity{
    * @brief This method gets called by the ticker during every time frame if tick is enable.
    * It's intended that an entity update it's state only during this function call
    * @param self
+   * @param xenv The execution environment of this entity.
    */
-  void (* const tick)(flEntity* self);
+  void (* const tick)(flEntity* self, flentXenv* xenv);
   #define flentSetTick(ent, _tick) *( (flentTick_tf *)(&(ent)->tick) ) = _tick
 
   const bool tickEnable;
@@ -168,7 +165,7 @@ struct flEntity{
    * @return The result of executing the given command
    */
   void* (* const hscmd)(flentsyc_t cmd, void *args);
-  #define flentSetHscmd(ent, sch) *( (flentsch_tf *)(&(ent)->hscmd) ) = sch
+  #define flentSetHscmd(ent, sch) *( (flentHscmd_tf *)(&(ent)->hscmd) ) = sch
   
 };
 
@@ -196,22 +193,23 @@ flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount);
  * @brief Free the memory associated with the given entity
  * @note cleanup operation should be perform on $ent->props before calling this method
  * @param ent 
+ * @param xenv The execution environment of the given entity
  */
-void flentFree(flEntity* ent);
+void flentFree(flEntity* ent, flentXenv* xenv);
 
 /**
- * @brief Add the given port to $ent
- * @note If $port already exist in $ent, nothing happens
+ * @brief Link and add the given port to $ent
+ * @note If $port already exist in $ent, only linking operation will happen
  * @param ent 
  * @param port
- * @return true on success | false on failure 
+ * @return true if $port already existed or was added | false otherwise 
  */
 bool flentAddPort(flEntity* ent, flentIOport* port);
 
 /**
- * @brief Remove the given port from $ent if found
+ * @brief Unlink and remove the given port from $ent if found
  * @note This method does not free the memory associated with the port,
- * it simply remove and the detach the given port from the entity if found.
+ * it simply unlink, remove and the detach the given port from the entity if found.
  * @param ent 
  * @param port 
  */
@@ -224,22 +222,82 @@ void flentRemovePort(flEntity* ent, flentIOport* port);
  */
 void flentDeletePort(flEntity* ent, flentIOport* port);
 
+typedef void (* flentxevTick_tf)(flentXenv* xenv, flint_t ct, flint_t dt);
+typedef bool (* flentxevAddEntity_tf)(flentXenv* xenv, flEntity* ent);
+typedef void (* flentxevRemoveEntity_tf)(flentXenv* xenv, flEntity* ent);
+typedef flEntity** (* flentxevFindEntity_tf)(flentXenv* xenv, flEntity* ent);
+
 struct flentXenv{
   flArray * const entities;
+  #define _flentxevSetEntities(xenv, ents) *( (flArray **)(&(xenv)->entities) ) = ents
 
   //The time in milliseconds of the latest call of the tick method
   const flint_t tickCT;
+  #define  _flentxevSetTickCT(xenv, ct) *( (flint_t*)(&(xenv)->tickCT) ) = ct
 
   //The time difference in milliseconds of the latest call and the previous 
   //call of the tick method
   const flint_t tickDT;
+  #define  _flentxevSetTickDT(xenv, dt) *( (flint_t*)(&(xenv)->tickDT) ) = dt
 
+  /**
+   * @brief To be called every time frame to run the environment.
+   * @param xenv
+   * @param ct The latest time before this method was called
+   * @param dt The time difference of the latest call and the previous call of this method.
+   * @note if $ct and $dt are zero, $flMillis will be use to obtain these values.
+   */
   void (* const tick)(flentXenv* xenv, flint_t ct, flint_t dt);
+  #define  _flentxevSetTick(xev, tik) *( (flentxevTick_tf*)(&(xenv)->tick) ) = tik
 
+  /**
+   * @brief Find $ent in $xenv
+   * @param xenv
+   * @param ent
+   * @return The location of $ent in $xenv if found | NULL
+   */
+  flEntity** (* const _findEntity)(flentXenv* xenv, flEntity* ent);
+  #define  _flentxevSetFindEntity(xenv, findEnt)\
+    *( (flentxevFindEntity_tf*)(&(xenv)->_findEntity) ) = findEnt
+
+  /**
+   * @brief Add the given entity($ent) to the environment($xenv) if it($ent) doesn't
+   * exist in the environment.
+   * @param xenv
+   * @param ent
+   * @return true if the entity alread existed or was added | false otherwise
+   */
   bool (* const addEntity)(flentXenv* xenv, flEntity* ent);
-  bool (* const removeEntity)(flentXenv* xenv, flEntity* ent);
+  #define  _flentxevSetAddEntity(xenv, addEnt)\
+    *( (flentxevAddEntity_tf*)(&(xenv)->addEntity) ) = addEnt
 
-  // flint_t (* const millis)();
+  /**
+   * @brief Unlink and remove the given entity($ent) from the environment($xenv) if
+   * found.
+   * @note This method does not delete the given entity
+   * @param xenv
+   * @param ent
+   */
+  void (* const removeEntity)(flentXenv* xenv, flEntity* ent);
+  #define  _flentxevSetRemoveEntity(xenv, rmvEnt)\
+    *( (flentxevRemoveEntity_tf*)(&(xenv)->removeEntity) ) = rmvEnt
+
+  // void * const props;
+  // #define  flentxevSetProps(xenv, _props) *( (void**)(&(xenv)->props) ) = _props
+
 };
+
+/**
+ * @brief Create a new execution environment
+ *  @param initialEntityCount The initial number of entities
+ */
+flentXenv* flentxevNew(flint_t initialEntityCount);
+
+/**
+ * @brief Destroy/delete the given environment.
+ * @param xenv 
+ * @param freeEnts If true, all entities within this environment will also be deleted.
+ */
+void flentxevFree(flentXenv* xenv, bool freeEnts);
 
 #endif//FLENTITYHEADERH_INCLUDED

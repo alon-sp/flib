@@ -3,18 +3,6 @@
 
 #include"flEntity.h"
 
-/*----------DEFAULT FUNCTIONS---------*/
-
-//Default tick handler
-static void flentdfnTick(flEntity* ent){
-    return;
-}
-
-//Default system command handler
-static void* flentdfnHscmd(flentsyc_t cmd, void *args){
-    return NULL;
-}
-
 /*----------flentIOport functions----------*/
 
 flentIOport* flentiopNew(flentipn_t ipname, flEntity* ent, flentIOport* targetPort){
@@ -28,10 +16,14 @@ flentIOport* flentiopNew(flentipn_t ipname, flEntity* ent, flentIOport* targetPo
 
     
     flentiopLink(iop, targetPort);
+
+    return iop;
 }
 
 void flentiopFree(flentIOport* iop){
     if(!iop) return;
+
+    flentiopUnlink(iop);
 
     if(iop->_obuf){
         flarrFree(iop->_obuf);
@@ -93,6 +85,20 @@ flentIOdata flentiodDecode(flArray* arrBuf){
 
 /*----------flEntity functions---------*/
 
+//--DEFAULT FUNCTIONS--
+
+//Default tick handler
+static void flentdfnTick(flEntity* ent, flentXenv* xenv){
+    return;
+}
+
+//Default system command handler
+static void* flentdfnHscmd(flentsyc_t cmd, void *args){
+    return NULL;
+}
+
+//--
+
 bool flentSetName(flEntity* ent, const char* namestr){
     if(!namestr) namestr = "";
 
@@ -127,8 +133,28 @@ flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount){
 
     flentSetHscmd(ent, flentdfnHscmd);
 
-    _flentSetXenv(ent, xenv);
     if(xenv) xenv->addEntity(xenv, ent);
+
+    return ent;
+}
+
+void flentFree(flEntity* ent, flentXenv* xenv){
+    //remove entiy from environment before destroying
+    if(xenv) xenv->removeEntity(xenv, ent);
+
+    //unlink and free all ports
+    if(ent->ioports){
+        for(int i = 0; i < ent->ioports->length; i++){
+            flentIOport* iop = *( (flentIOport**)flarrGet(ent->ioports, i) );
+            flentiopFree(iop);
+        }
+
+        //clean up ioports
+        flarrFree(ent->ioports);
+    }
+
+    //clean up entity
+    flmemFree(ent);
 }
 
 /**
@@ -151,11 +177,15 @@ static flentIOport** flentFindPort(flEntity* ent, flentIOport* port){
 
 bool flentAddPort(flEntity* ent, flentIOport* port){
     if(!ent->ioports) _flentInitializeIOports(ent, 2);
-    
-    flentIOport** ploc = flentFindPort(ent, port);
 
-    if(ploc) *ploc = port;
-    else return flarrPush(ent->ioports, port)? true : false;
+    if(port) flentiopSetEntity(port, ent);//just incase
+
+    if(!flentFindPort(ent, port)){
+        flentIOport** ploc = flentFindPort(ent, NULL);//check for any available slots
+
+        if(ploc) *ploc = port;
+        else return flarrPush(ent->ioports, port)? true : false;
+    }
 
     return true;
 }
@@ -163,6 +193,7 @@ bool flentAddPort(flEntity* ent, flentIOport* port){
 void flentRemovePort(flEntity* ent, flentIOport* port){
     flentIOport** ploc = flentFindPort(ent, port);
     if(ploc){
+        flentiopUnlink(*ploc);//This operation is necessary because a port without an entity is invalid.
         flentiopSetEntity(*ploc, NULL);
         *ploc = NULL;
     }
@@ -171,6 +202,84 @@ void flentRemovePort(flEntity* ent, flentIOport* port){
 void flentDeletePort(flEntity* ent, flentIOport* port){
     flentRemovePort(ent, port);
     flentiopFree(port);
+}
+
+/*----------flentXenv functions---------*/
+
+//--DEFAULT FUNCTIONS--
+
+static void flentxevdfnTick(flentXenv* xenv, flint_t ct, flint_t dt){
+    if(ct || dt){
+        _flentxevSetTickCT(xenv, ct);
+        _flentxevSetTickDT(xenv, dt);
+    }else{
+        flint_t prevTime = xenv->tickCT;
+        _flentxevSetTickCT(xenv, flMillis());
+        _flentxevSetTickDT(xenv, xenv->tickCT - prevTime);
+    }
+
+    for(int i = 0; i < xenv->entities->length; i++){
+        flEntity* ent = *( (flEntity**)flarrGet(xenv->entities, i) );
+        if(ent && ent->tickEnable) ent->tick(ent, xenv);
+    }
+}
+
+static flEntity** flentxevdfnFindEntity(flentXenv* xenv, flEntity* ent){
+    for(int i = 0; i < xenv->entities->length; i++){
+        flEntity** eloc = (flEntity**)flarrGet(xenv->entities, i);
+        if(*eloc == ent) return eloc;
+    }
+
+    return NULL;
+}
+
+static bool flentxevdfnAddEntity(flentXenv* xenv, flEntity* ent){
+    if( !xenv->_findEntity(xenv, ent) ){
+        flEntity** eloc = xenv->_findEntity(xenv, NULL);
+        if(eloc) *eloc = ent;
+        else return flarrPush(xenv->entities, ent)? true : false;
+    }
+
+    return true;
+}
+
+static void flentxevdfnRemoveEntity(flentXenv* xenv, flEntity* ent){
+    flEntity** eloc = xenv->_findEntity(xenv, ent);
+    if(eloc){
+        *eloc = NULL;
+    }
+}
+
+flentXenv* flentxevNew(flint_t initialEntityCount){
+    flentXenv* xenv = flmemMalloc(sizeof(flentXenv));
+
+    if(!initialEntityCount) initialEntityCount = 2;
+    _flentxevSetEntities( xenv, flarrNew(initialEntityCount, sizeof(flentXenv*) ) );
+
+    _flentxevSetTickCT(xenv, 0);
+    _flentxevSetTickDT(xenv, 0);
+
+    _flentxevSetTick(xenv, flentxevdfnTick);
+    _flentxevSetFindEntity(xenv, flentxevdfnFindEntity);
+    _flentxevSetAddEntity(xenv, flentxevdfnAddEntity);
+    _flentxevSetRemoveEntity(xenv, flentxevdfnRemoveEntity);
+
+    return xenv;
+}
+
+void flentxevFree(flentXenv* xenv, bool freeEnts){
+    if(!xenv) return;
+
+    if(freeEnts){
+        for(int i = 0; i < xenv->entities->length; i++){
+            flentFree( *( (flEntity**)flarrGet(xenv->entities, i) ), xenv );
+        }
+    }
+
+    flarrFree(xenv->entities);
+    _flentxevSetEntities(xenv, NULL);
+
+    flmemFree(xenv);
 }
 
 #undef _flentInitializeIOports
