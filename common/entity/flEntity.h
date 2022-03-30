@@ -86,6 +86,9 @@ flentIOport* flentiopUnlink(flentIOport* iop);
  */
 void flentiopWrite(flentIOport* iop, flentIOdata iodata);
 
+//Append the given data to the data output of the given port.
+#define flentiopAppendData(iop, dataPtr, dataSize) flarrPushs( iop->_obuf, dataPtr, dataSize )
+
 //Read the input of the given port
 #define flentiopReadInput(iop) (iop->_linkedPort)?\
     flentiodDecode(iop->_linkedPort->_obuf): flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0)

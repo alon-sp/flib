@@ -11,6 +11,8 @@ flentIOport* flentiopNew(bool inputOnly, flentipn_t ipname, flentIOport* targetP
     flArray* outputBuffer = NULL;
     if(!inputOnly){
         outputBuffer = flarrNew(sizeof(flbyt_t)+sizeof(flentdid_t)+sizeof(void*), sizeof(flbyt_t)); 
+        //Write default output value
+        flentiodEncode(flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0), outputBuffer);
     }
     _flentiopSetObuf(iop, outputBuffer);
 
@@ -124,7 +126,7 @@ bool flentSetName(flEntity* ent, const char* namestr){
     return true;
 }
 
-#define _flentInitializeIOports(ent, portCount) _flentSetIOports(ent, flarrNew(portCount, sizeof(flentIOport)))
+#define _flentInitializeIOports(ent, portCount) _flentSetIOports(ent, flarrNew(portCount, sizeof(flentIOport*)))
 
 flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount){
     flEntity* ent = flmemMalloc(sizeof(flEntity));
@@ -212,7 +214,7 @@ bool flentAddPort(flEntity* ent, flentIOport* port){
         flentIOport** ploc = flentFindPort(ent, NULL);//check for any available slots
 
         if(ploc) *ploc = port;
-        else return flarrPush(ent->ioports, port)? true : false;
+        else return flarrPush(ent->ioports, &port)? true : false;
     }
 
     return true;
@@ -297,7 +299,7 @@ bool flentxevAddEntity(flentXenv* xenv, flEntity* ent){
     if( !flentxevFindEntity(xenv, ent) ){
         flEntity** eloc = flentxevFindEntity(xenv, NULL);
         if(eloc) *eloc = ent;
-        else return flarrPush(xenv->entities, ent)? true : false;
+        else return flarrPush(xenv->entities, &ent)? true : false;
     }
 
     return true;

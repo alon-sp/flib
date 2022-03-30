@@ -8,8 +8,10 @@
     #define flentipnMAIN          1
     #define flentipnUI2D          2
     #define flentipnUI3D          3
-    #define flentipnONE           4
-    #define flentipnTWO           5
-    #define flentipnTHREE         6
+    #define flentipn1             4
+    #define flentipn2             5
+    #define flentipn3             6
+    #define flentipn4             7
+    #define flentipn5             8
 
 #endif
