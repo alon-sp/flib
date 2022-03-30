@@ -26,6 +26,8 @@ struct flentIOport{
  * ->the first ${sizeof(uint8_t)} bytes is the mode of the output data.
  * ->the second ${sizeof(flentdid_t)} bytes is the id of the output data.
  * ->the interpretation of the remaining set of bytes depends on the entity involved.
+ * @note if this pointer is NULL, this port is an input only port and as such any attempt to
+ * write to it will result in error(most likely segmentation fault)
  */
   flArray * const _obuf;
   #define _flentiopSetObuf(iop, obuf) *( (flArray**)(&(iop)->_obuf) ) = obuf
@@ -43,12 +45,16 @@ struct flentIOport{
 
 /**
  * @brief Create a new port
+ * @param inputOnly if true, no output buffer will be allocated for the newly created port
+ * and as such any write operation on it will result in error.
  * @param ipname The name of this port
- * @param ent The associated entity of the new port
  * @param targetPort? Port to link the newly created port with
  * @return Pointer to the newly created port.
  */
-flentIOport* flentiopNew(flentipn_t ipname, flEntity* ent, flentIOport* targetPort);
+flentIOport* flentiopNew(bool inputOnly, flentipn_t ipname, flentIOport* targetPort);
+
+#define flentiopNewOutputport(ipname, targetPort) flentiopNew(false, ipname, targetPort)
+#define flentiopNewInputPort(ipname, srcPort) flentiopNew(true, ipname, srcPort)
 
 /**
  * @brief unlink $iop and clean up the memory associated with it
@@ -72,15 +78,22 @@ void flentiopLink(flentIOport* port1, flentIOport* port2);
  */
 flentIOport* flentiopUnlink(flentIOport* iop);
 
-//Write the given io data($iodata) to the output buffer of the given port($iop)
-#define flentiopWrite(iop, iodata) flentiodEncode(iodata, iop->_obuf)
+/**
+ * @brief 
+ * Write the given io data($iodata) to the output buffer of the given port($iop)
+ * @param iop 
+ * @param iodata 
+ */
+void flentiopWrite(flentIOport* iop, flentIOdata iodata);
 
 //Read the input of the given port
 #define flentiopReadInput(iop) (iop->_linkedPort)?\
-    flentiodDecodeBuffer(iop->_linkedPort->_obuf): flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0)
+    flentiodDecode(iop->_linkedPort->_obuf): flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0)
+
+#define flentiopRead(iop) flentiopReadInput(iop)
 
 //Read the output of the given port
-#define flentiopReadOutput(iop) flentiodDecodeBuffer(iop->_obuf)
+#define flentiopReadOutput(iop) flentiodDecode(iop->_obuf)
 
 /**
  * @brief A utility structure for decoding $flentIOport output buffer.
@@ -109,6 +122,8 @@ void flentiodEncode(flentIOdata iod, flArray* destArrbuf);
  * 
  * @param arrBuf An output buffer of a port($flentIOport)
  * @return The decoded data
+ * @note Pointers associated with the returned data struct are guaranteed to be valid 
+ * till the next tick after the current tick(time frame)
  */
 flentIOdata flentiodDecode(flArray* arrBuf);
 
@@ -117,8 +132,8 @@ typedef void* (*flentHscmd_tf)(flentsyc_t cmd, void *args);
 
 /**
  * @brief
- * -A mesh data structure of computational nodes
- * -Each instance of this interface is the brain of a given process or activity.
+ * -A mesh-like data structure for modeling real world entities and how they interact with each other.
+ * -Each instance of this interface can be view as a high level sequential logic circuit.
  */
 struct flEntity{
 
@@ -131,7 +146,7 @@ struct flEntity{
   #define _flentSetName(ent, _namestr) *( (char**)(&(ent)->name) ) = _namestr
 
   /**
-   * @brief All other specific properties of this entity apart from the ones 
+   * @brief All other additional properties of this entity apart from the ones 
    * specified by the interface.
    * @note This pointer and all associated resources should be managed entirely by the entity.
    * This should exclude any resources that are associated with ports that have been added 
@@ -141,7 +156,7 @@ struct flEntity{
   void * const props;
   #define  flentSetProps(ent, _props) *( (void**)(&(ent)->props) ) = _props
 
-  //An array of pointers to all ports of this entity.
+  //An array of pointers to all input-output pairs ports of this entity.
   flArray * const ioports;
   #define _flentSetIOports(ent, _ioports) *( (flArray **)(&(ent)->ioports) ) = _ioports
 
@@ -191,11 +206,19 @@ flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount);
 
 /**
  * @brief Free the memory associated with the given entity
- * @note cleanup operation should be perform on $ent->props before calling this method
+ * @note send $flentsycCLEANUP command to the given entity before destroying it.
  * @param ent 
  * @param xenv The execution environment of the given entity
  */
 void flentFree(flEntity* ent, flentXenv* xenv);
+
+/**
+ * @brief find the first port encounter in $ent with the given name($portName)
+ * @param ent 
+ * @param portName 
+ * @return Pointer to the port with the given name | NULL if no port was found.
+ */
+flentIOport* flentFindPortByName(flEntity* ent, flentipn_t portName);
 
 /**
  * @brief Link and add the given port to $ent
@@ -207,9 +230,8 @@ void flentFree(flEntity* ent, flentXenv* xenv);
 bool flentAddPort(flEntity* ent, flentIOport* port);
 
 /**
- * @brief Unlink and remove the given port from $ent if found
- * @note This method does not free the memory associated with the port,
- * it simply unlink, remove and the detach the given port from the entity if found.
+ * @brief Remove the given port from $ent if found
+ * @note This method does not free the memory associated with the port
  * @param ent 
  * @param port 
  */
@@ -221,11 +243,6 @@ void flentRemovePort(flEntity* ent, flentIOport* port);
  * @param port 
  */
 void flentDeletePort(flEntity* ent, flentIOport* port);
-
-typedef void (* flentxevTick_tf)(flentXenv* xenv, flint_t ct, flint_t dt);
-typedef bool (* flentxevAddEntity_tf)(flentXenv* xenv, flEntity* ent);
-typedef void (* flentxevRemoveEntity_tf)(flentXenv* xenv, flEntity* ent);
-typedef flEntity** (* flentxevFindEntity_tf)(flentXenv* xenv, flEntity* ent);
 
 struct flentXenv{
   flArray * const entities;
@@ -239,51 +256,6 @@ struct flentXenv{
   //call of the tick method
   const flint_t tickDT;
   #define  _flentxevSetTickDT(xenv, dt) *( (flint_t*)(&(xenv)->tickDT) ) = dt
-
-  /**
-   * @brief To be called every time frame to run the environment.
-   * @param xenv
-   * @param ct The latest time before this method was called
-   * @param dt The time difference of the latest call and the previous call of this method.
-   * @note if $ct and $dt are zero, $flMillis will be use to obtain these values.
-   */
-  void (* const tick)(flentXenv* xenv, flint_t ct, flint_t dt);
-  #define  _flentxevSetTick(xev, tik) *( (flentxevTick_tf*)(&(xenv)->tick) ) = tik
-
-  /**
-   * @brief Find $ent in $xenv
-   * @param xenv
-   * @param ent
-   * @return The location of $ent in $xenv if found | NULL
-   */
-  flEntity** (* const _findEntity)(flentXenv* xenv, flEntity* ent);
-  #define  _flentxevSetFindEntity(xenv, findEnt)\
-    *( (flentxevFindEntity_tf*)(&(xenv)->_findEntity) ) = findEnt
-
-  /**
-   * @brief Add the given entity($ent) to the environment($xenv) if it($ent) doesn't
-   * exist in the environment.
-   * @param xenv
-   * @param ent
-   * @return true if the entity alread existed or was added | false otherwise
-   */
-  bool (* const addEntity)(flentXenv* xenv, flEntity* ent);
-  #define  _flentxevSetAddEntity(xenv, addEnt)\
-    *( (flentxevAddEntity_tf*)(&(xenv)->addEntity) ) = addEnt
-
-  /**
-   * @brief Unlink and remove the given entity($ent) from the environment($xenv) if
-   * found.
-   * @note This method does not delete the given entity
-   * @param xenv
-   * @param ent
-   */
-  void (* const removeEntity)(flentXenv* xenv, flEntity* ent);
-  #define  _flentxevSetRemoveEntity(xenv, rmvEnt)\
-    *( (flentxevRemoveEntity_tf*)(&(xenv)->removeEntity) ) = rmvEnt
-
-  // void * const props;
-  // #define  flentxevSetProps(xenv, _props) *( (void**)(&(xenv)->props) ) = _props
 
 };
 
@@ -299,5 +271,32 @@ flentXenv* flentxevNew(flint_t initialEntityCount);
  * @param freeEnts If true, all entities within this environment will also be deleted.
  */
 void flentxevFree(flentXenv* xenv, bool freeEnts);
+
+/**
+ * @brief To be called every time frame to run the environment.
+ * @param xenv
+ * @param ct The latest time before this function was called
+ * @param dt The time difference of the latest call and the previous call of this function.
+ * @note if $ct and $dt are zero, $flMillis will be use to obtain these values.
+ */
+void flentxevTick(flentXenv* xenv, flint_t ct, flint_t dt);
+
+/**
+ * @brief Add the given entity($ent) to the environment($xenv) if it($ent) doesn't
+ * exist in the environment.
+ * @param xenv
+ * @param ent
+ * @return true if the entity alread existed or was added | false otherwise
+ */
+bool flentxevAddEntity(flentXenv* xenv, flEntity* ent);
+
+/**
+ * @brief Unlink and remove the given entity($ent) from the environment($xenv) if
+ * found.
+ * @note This method does not delete the given entity
+ * @param xenv
+ * @param ent
+ */
+void flentxevRemoveEntity(flentXenv* xenv, flEntity* ent);
 
 #endif//FLENTITYHEADERH_INCLUDED

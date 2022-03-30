@@ -5,14 +5,17 @@
 
 /*----------flentIOport functions----------*/
 
-flentIOport* flentiopNew(flentipn_t ipname, flEntity* ent, flentIOport* targetPort){
+flentIOport* flentiopNew(bool inputOnly, flentipn_t ipname, flentIOport* targetPort){
     flentIOport* iop = flmemMalloc(sizeof(flentIOport));
 
-    flArray* outputBuffer = flarrNew(sizeof(flbyt_t)+sizeof(flentdid_t)+sizeof(void*), sizeof(flbyt_t));
+    flArray* outputBuffer = NULL;
+    if(!inputOnly){
+        outputBuffer = flarrNew(sizeof(flbyt_t)+sizeof(flentdid_t)+sizeof(void*), sizeof(flbyt_t)); 
+    }
     _flentiopSetObuf(iop, outputBuffer);
 
     flentiopSetName(iop, ipname);
-    flentiopSetEntity(iop, ent);
+    flentiopSetEntity(iop, NULL);
 
     
     flentiopLink(iop, targetPort);
@@ -47,6 +50,14 @@ flentIOport* flentiopUnlink(flentIOport* iop){
     _flentiopSetlinkedPort(iop, NULL);
 
     return linkedPort;
+}
+
+void flentiopWrite(flentIOport* iop, flentIOdata iodata){
+    if(iop->_linkedPort && iop->_linkedPort->entity){
+        //notify the target entity of new input
+        flentEnableTick(iop->_linkedPort->entity);
+    }
+    flentiodEncode(iodata, iop->_obuf);
 }
 
 flentIOdata flentiodNew(int8_t dataMode, flentdid_t dataId, void* data, flint_t dataSize){
@@ -133,14 +144,19 @@ flEntity* flentNew(flentXenv* xenv, flentcco_t ccode, int initialPortCount){
 
     flentSetHscmd(ent, flentdfnHscmd);
 
-    if(xenv) xenv->addEntity(xenv, ent);
+    if(xenv) flentxevAddEntity(xenv, ent);
 
     return ent;
 }
 
 void flentFree(flEntity* ent, flentXenv* xenv){
+    if(!ent) return;
+
+    //Send cleanup command to entity before destroying it.
+    ent->hscmd(flentsycCLEANUP, NULL);
+
     //remove entiy from environment before destroying
-    if(xenv) xenv->removeEntity(xenv, ent);
+    if(xenv) flentxevRemoveEntity(xenv, ent);
 
     //unlink and free all ports
     if(ent->ioports){
@@ -151,10 +167,20 @@ void flentFree(flEntity* ent, flentXenv* xenv){
 
         //clean up ioports
         flarrFree(ent->ioports);
+        _flentSetIOports(ent, NULL);
     }
 
     //clean up entity
     flmemFree(ent);
+}
+
+flentIOport* flentFindPortByName(flEntity* ent, flentipn_t portName){
+    for(int i = 0; i<ent->ioports->length; i++){
+        flentIOport** ploc = (flentIOport**)flarrGet(ent->ioports, i);
+        if( *ploc && (*ploc)->name == portName ) return *ploc;
+    }
+
+    return NULL;
 }
 
 /**
@@ -168,14 +194,16 @@ static flentIOport** flentFindPort(flEntity* ent, flentIOport* port){
     if(!ent->ioports) return NULL;
     
     for(int i = 0; i<ent->ioports->length; i++){
-        flentIOport** p = (flentIOport**)flarrGet(ent->ioports, i);
-        if(*p == port) return p;
+        flentIOport** ploc = (flentIOport**)flarrGet(ent->ioports, i);
+        if(*ploc == port) return ploc;
     }
     
     return NULL;
 }
 
 bool flentAddPort(flEntity* ent, flentIOport* port){
+    if(!port) return false;
+
     if(!ent->ioports) _flentInitializeIOports(ent, 2);
 
     if(port) flentiopSetEntity(port, ent);//just incase
@@ -193,7 +221,6 @@ bool flentAddPort(flEntity* ent, flentIOport* port){
 void flentRemovePort(flEntity* ent, flentIOport* port){
     flentIOport** ploc = flentFindPort(ent, port);
     if(ploc){
-        flentiopUnlink(*ploc);//This operation is necessary because a port without an entity is invalid.
         flentiopSetEntity(*ploc, NULL);
         *ploc = NULL;
     }
@@ -206,63 +233,14 @@ void flentDeletePort(flEntity* ent, flentIOport* port){
 
 /*----------flentXenv functions---------*/
 
-//--DEFAULT FUNCTIONS--
-
-static void flentxevdfnTick(flentXenv* xenv, flint_t ct, flint_t dt){
-    if(ct || dt){
-        _flentxevSetTickCT(xenv, ct);
-        _flentxevSetTickDT(xenv, dt);
-    }else{
-        flint_t prevTime = xenv->tickCT;
-        _flentxevSetTickCT(xenv, flMillis());
-        _flentxevSetTickDT(xenv, xenv->tickCT - prevTime);
-    }
-
-    for(int i = 0; i < xenv->entities->length; i++){
-        flEntity* ent = *( (flEntity**)flarrGet(xenv->entities, i) );
-        if(ent && ent->tickEnable) ent->tick(ent, xenv);
-    }
-}
-
-static flEntity** flentxevdfnFindEntity(flentXenv* xenv, flEntity* ent){
-    for(int i = 0; i < xenv->entities->length; i++){
-        flEntity** eloc = (flEntity**)flarrGet(xenv->entities, i);
-        if(*eloc == ent) return eloc;
-    }
-
-    return NULL;
-}
-
-static bool flentxevdfnAddEntity(flentXenv* xenv, flEntity* ent){
-    if( !xenv->_findEntity(xenv, ent) ){
-        flEntity** eloc = xenv->_findEntity(xenv, NULL);
-        if(eloc) *eloc = ent;
-        else return flarrPush(xenv->entities, ent)? true : false;
-    }
-
-    return true;
-}
-
-static void flentxevdfnRemoveEntity(flentXenv* xenv, flEntity* ent){
-    flEntity** eloc = xenv->_findEntity(xenv, ent);
-    if(eloc){
-        *eloc = NULL;
-    }
-}
-
 flentXenv* flentxevNew(flint_t initialEntityCount){
     flentXenv* xenv = flmemMalloc(sizeof(flentXenv));
 
     if(!initialEntityCount) initialEntityCount = 2;
-    _flentxevSetEntities( xenv, flarrNew(initialEntityCount, sizeof(flentXenv*) ) );
+    _flentxevSetEntities( xenv, flarrNew(initialEntityCount, sizeof(flEntity*) ) );
 
     _flentxevSetTickCT(xenv, 0);
     _flentxevSetTickDT(xenv, 0);
-
-    _flentxevSetTick(xenv, flentxevdfnTick);
-    _flentxevSetFindEntity(xenv, flentxevdfnFindEntity);
-    _flentxevSetAddEntity(xenv, flentxevdfnAddEntity);
-    _flentxevSetRemoveEntity(xenv, flentxevdfnRemoveEntity);
 
     return xenv;
 }
@@ -280,6 +258,56 @@ void flentxevFree(flentXenv* xenv, bool freeEnts){
     _flentxevSetEntities(xenv, NULL);
 
     flmemFree(xenv);
+}
+
+/**
+ * @brief Find $ent in $xenv
+ * @param xenv
+ * @param ent
+ * @return The location of $ent in $xenv if found | NULL
+ */
+static flEntity** flentxevFindEntity(flentXenv* xenv, flEntity* ent){
+    for(int i = 0; i < xenv->entities->length; i++){
+        flEntity** eloc = (flEntity**)flarrGet(xenv->entities, i);
+        if(*eloc == ent) return eloc;
+    }
+
+    return NULL;
+}
+
+void flentxevTick(flentXenv* xenv, flint_t ct, flint_t dt){
+    if(ct || dt){
+        _flentxevSetTickCT(xenv, ct);
+        _flentxevSetTickDT(xenv, dt);
+    }else{
+        flint_t prevTime = xenv->tickCT;
+        _flentxevSetTickCT(xenv, flMillis());
+        _flentxevSetTickDT(xenv, xenv->tickCT - prevTime);
+    }
+
+    for(int i = 0; i < xenv->entities->length; i++){
+        flEntity* ent = *( (flEntity**)flarrGet(xenv->entities, i) );
+        if(ent && ent->tickEnable) ent->tick(ent, xenv);
+    }
+}
+
+bool flentxevAddEntity(flentXenv* xenv, flEntity* ent){
+    if(!ent) return false;
+
+    if( !flentxevFindEntity(xenv, ent) ){
+        flEntity** eloc = flentxevFindEntity(xenv, NULL);
+        if(eloc) *eloc = ent;
+        else return flarrPush(xenv->entities, ent)? true : false;
+    }
+
+    return true;
+}
+
+void flentxevRemoveEntity(flentXenv* xenv, flEntity* ent){
+    flEntity** eloc = flentxevFindEntity(xenv, ent);
+    if(eloc){
+        *eloc = NULL;
+    }
 }
 
 #undef _flentInitializeIOports

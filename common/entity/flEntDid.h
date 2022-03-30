@@ -6,9 +6,6 @@ typedef uint32_t flentdid_t;
 #define flentdidNIL       0
 #define flentdidRESULT    1
 #define flentdidNUMBER    2
-#define flentdidRESET     3
-#define flentdidSUM       4
-#define flentdidPRODUCT   5
-#define flentdidQUOTIENT  6
+#define flentdidSTRING    3
 
 #endif
