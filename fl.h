@@ -3,10 +3,10 @@
 
 #include<stdlib.h>
 
-#include"flConstants.h"
-#include"flError.h"
-#include"./container/flArray.h"
-#include"./entity/flEntity.h"
+#include"common/flConstants.h"
+#include"common/flError.h"
+#include"common/container/flArray.h"
+#include"common/entity/flEntity.h"
 
 #define flmemMalloc(nbytes) malloc(nbytes)
 #define flmemFree(mptr) free(mptr)

@@ -1,21 +1,14 @@
-
 cmake_minimum_required(VERSION 3.10)
 
-project(FLtest)
-
+project(Flib)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED true)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
-add_subdirectory("${PROJECT_SOURCE_DIR}/common")
+add_subdirectory( "${PROJECT_SOURCE_DIR}/common/_test/" )
 
-add_executable(flTest ./common/_test/main.c ./common/_test/_flArray.c ./common/_test/entity/_flEntity.c)
+include_directories( ${PROJECT_SOURCE_DIR}/.. )
 
-target_link_libraries(flTest PUBLIC fl)
-
-target_include_directories(flTest PUBLIC 
-    "${PROJECT_SOURCE_DIR}/common/_test"
-    "${PROJECT_SOURCE_DIR}/common/_test/entity"
-)
+add_library(flib fl.c ./common/flError.c ./common/container/flArray.c ./common/entity/flEntity.c)

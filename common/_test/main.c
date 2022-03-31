@@ -1,8 +1,9 @@
 #include<stdio.h>
 
-#include"../fl.h"
+#include"flib/fl.h"
+
 #include"_flArray.h"
-#include"_flEntity.h"
+#include"./entity/_flEntity.h"
 
 void onError(const char* errLog){
     printf("%s", errLog);

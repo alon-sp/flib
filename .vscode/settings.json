@@ -1,6 +1,7 @@
 {
-    "C_Cpp.errorSquiggles": "Enabled",
     "files.associations": {
-        "flarray.h": "c"
+        "fl.h": "c",
+        "flconstants.h": "c",
+        "_flentity.h": "c"
     }
 }
