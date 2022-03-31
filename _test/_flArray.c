@@ -1,7 +1,7 @@
 
 #include<stdio.h>
-#include"../container/flArray.h"
-#include"../flError.h"
+
+#include"flib/fl.h"
 #include"_flArray.h"
 
 typedef struct{
