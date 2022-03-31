@@ -1,7 +1,7 @@
 
 #include<stdio.h>
 
-#include"flib/fl.h"
+#include"fl.h"
 #include"_flArray.h"
 
 typedef struct{

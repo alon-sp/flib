@@ -1,5 +1,5 @@
 
-#include"flib/fl.h"
+#include"fl.h"
 #include"flArray.h"
 
 inline static void _flarrSetLength(flArray* arr, flint_t _length){

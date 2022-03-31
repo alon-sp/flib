@@ -4,7 +4,7 @@
 #include<stdio.h>
 #include<math.h>
 
-#include"flib/fl.h"
+#include"fl.h"
 
 bool _flentRunTests();
 

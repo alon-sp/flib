@@ -1,6 +1,6 @@
 #include<stdio.h>
 
-#include"flib/fl.h"
+#include"fl.h"
 
 #include"_flArray.h"
 #include"./entity/_flEntity.h"

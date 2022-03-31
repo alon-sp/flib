@@ -9,6 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 add_subdirectory( "${PROJECT_SOURCE_DIR}/_test/" )
 
-include_directories( ${PROJECT_SOURCE_DIR}/.. )
+include_directories( ${PROJECT_SOURCE_DIR} )
 
 add_library(flib fl.c ./common/flError.c ./common/container/flArray.c ./common/entity/flEntity.c)
