@@ -53,7 +53,7 @@ struct flentIOport{
  */
 flentIOport* flentiopNew(bool inputOnly, flentipn_t ipname, flentIOport* targetPort);
 
-#define flentiopNewOutputport(ipname, targetPort) flentiopNew(false, ipname, targetPort)
+#define flentiopNewIOport(ipname, targetPort) flentiopNew(false, ipname, targetPort)
 #define flentiopNewInputPort(ipname, srcPort) flentiopNew(true, ipname, srcPort)
 
 /**

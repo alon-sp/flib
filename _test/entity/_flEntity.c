@@ -27,7 +27,7 @@ flEntity* strAdderEntNew(flentXenv* xenv){
     flEntity* ent = flentNew(xenv, 0, 0);
     flentIOport* input1 = flentiopNewInputPort(flentipn1, NULL);
     flentIOport* input2 = flentiopNewInputPort(flentipn2, NULL);
-    flentIOport* output = flentiopNewOutputport(flentipn3, NULL);
+    flentIOport* output = flentiopNewIOport(flentipn3, NULL);
     
     flentAddPort(ent, input1);
     flentAddPort(ent, input2);
@@ -52,10 +52,10 @@ static bool runStrAdderTest(){
     flentiopLink(flentFindPortByName(adder2, flentipn3), flentFindPortByName(adder3, flentipn2));
 
     //Create some ports for sending inputs to the above entities
-    flentIOport* inp1 = flentiopNewOutputport(flentipn1, NULL);
-    flentIOport* inp2 = flentiopNewOutputport(flentipn2, NULL);
-    flentIOport* inp3 = flentiopNewOutputport(flentipn3, NULL);
-    flentIOport* inp4 = flentiopNewOutputport(flentipn4, NULL);
+    flentIOport* inp1 = flentiopNewIOport(flentipn1, NULL);
+    flentIOport* inp2 = flentiopNewIOport(flentipn2, NULL);
+    flentIOport* inp3 = flentiopNewIOport(flentipn3, NULL);
+    flentIOport* inp4 = flentiopNewIOport(flentipn4, NULL);
 
     //link entities with input and ouput ports
     flentiopLink(inp1, flentFindPortByName(adder1, flentipn1));
