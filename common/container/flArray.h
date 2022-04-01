@@ -80,6 +80,21 @@ void* flarrPop(flArray* flarr);
  */
 void* flarrGet(flArray* flarr, flint_t index);
 
+/**
+ * @brief Read $count elements of the given array($flarr) and write them to the given destination
+ * ($destBuf) beginning at the given index($index) in the array.
+ * @note if ${index + count} is greater than the array length, 
+ * only (array length - $count) elements will be written to destination.
+ * @note This function assume the given destination buffer is large enough to hold
+ * $count elements of the given array.
+ * @param flarr 
+ * @param index 
+ * @param count 
+ * @param destBuf 
+ * @return The total number of elements that were written to the given destination.
+ */
+flint_t flarrGets(flArray* flarr, flint_t index, flint_t count, void* destBuf);
+
 // /**
 //  * @brief compare each element of $flarr against first $flarr->elemSize bytes of $dataBytesPtr
 //  * for equality.

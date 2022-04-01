@@ -131,6 +131,27 @@ static bool _flarrTestPushs(){
 
 }
 
+static bool _flarrTestGets(){
+    flArray* intArr = flarrNew(0, sizeof(int));
+    int nums[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    flarrPushs(intArr, nums, sizeof(nums) / sizeof(*nums));
+
+    int numDest[3];
+    flint_t elemCount = flarrGets(intArr, 1, 3, numDest);
+    if(!(elemCount == 3 && numDest[0] == 1 && numDest[1] == 2 && numDest[2] == 3)){
+        flerrHandle("\nTESf _flarrTestGets: Test Failed !1");
+    }
+
+    elemCount = flarrGets(intArr, 9, 3, numDest);  
+    if(!(elemCount == 2 && numDest[0] == 9 && numDest[1] == 10 && numDest[2] == 3)){
+        flerrHandle("\nTESf _flarrTestGets: Test Failed !2");
+    }
+
+    flarrFree(intArr);
+
+    printf("\n_flarrTestGets: TEST OK");
+}
+
 bool _flarrRunTests(){
     _flarrTestPush();
     _flarrTestSetLength();
@@ -138,6 +159,7 @@ bool _flarrRunTests(){
     _flarrstrTestPush();
     _flarrstrTestPop();
     _flarrTestPushs();
+    _flarrTestGets();
 
     return true;
 }

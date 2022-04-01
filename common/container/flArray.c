@@ -112,6 +112,21 @@ void* flarrGet(flArray* flarr, flint_t index){
     return _flarrGet(flarr, index);
 }
 
+flint_t flarrGets(flArray* flarr, flint_t index, flint_t count, void* destBuf){
+    if(index < 0) index = 0;
+
+    if(index >= flarr->length){
+        flerrHandle("\nIOB flarrGet !1");
+        return 0;
+    }
+
+    if( index+count > flarr->length ) count = flarr->length-index;
+
+    memcpy( destBuf, _flarrGet(flarr, index), count*flarr->elemSize );
+
+    return count;
+}
+
 // void* flarrFind(flArray* flarr, const void * dataBytesPtr){
 //     for(flint_t i = 0; i<flarr->length; i++){
 //         if(memcmp(dataBytesPtr, _flarrGet(flarr, i), flarr->elemSize) == 0 ){
