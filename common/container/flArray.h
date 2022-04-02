@@ -73,6 +73,14 @@ void* flarrPushs(flArray* flarr, const void* dataBytesPtr, flint_t elemCount);
 void* flarrPop(flArray* flarr);
 
 /**
+ * @brief If $n is negative, perform a left shift and fit operation.
+ * If $n is positive, pops $n elements of the given array
+ * @param flarr 
+ * @param n 
+ */
+void flarrPops(flArray* flarr, flint_t n);
+
+/**
  * @brief Get the element at the given index
  * @param flarr 
  * @param index 
@@ -94,6 +102,29 @@ void* flarrGet(flArray* flarr, flint_t index);
  * @return The total number of elements that were written to the given destination.
  */
 flint_t flarrGets(flArray* flarr, flint_t index, flint_t count, void* destBuf);
+
+/**
+ * @brief Shift all elements of the array to either left(for negative values of $n)
+ * or right(for positive values of $n) by $n elements.
+ * @note Discards all elements whose new indexes are out of bound(ie either less than 0
+ * or greater than the length of the array)
+ * @note This function does not change the length of the given array.
+ * @param flarr 
+ * @param n 
+ */
+void flarrShift(flArray* flarr, flint_t n);
+
+/**
+ * @brief If $n is negative, shift all elements of the given array to the left by n,
+ *  discards elements at negative indexes and resize the array(update it's length) to
+ *  fit the new elements count(ie ${flarr->length -> flarr->length-|n|}).
+ * If $n is positive, resize the given array(ie ${flarr->length -> flarr->length + n})
+ *  and shift all elements of the array to the right by $n thereby maintaining the original
+ *  elements of the array.
+ * @param flarr 
+ * @param n 
+ */
+void flarrShiftAndFit(flArray* flarr, flint_t n);
 
 // /**
 //  * @brief compare each element of $flarr against first $flarr->elemSize bytes of $dataBytesPtr

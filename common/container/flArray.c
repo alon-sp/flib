@@ -102,6 +102,14 @@ void* flarrPop(flArray* flarr){
     return _flarrPop(flarr);
 }
 
+void flarrPops(flArray* flarr, flint_t n){
+    if(n < 0){
+        flarrShift(flarr, n);
+    }else{
+        flarrSetLength(flarr, flarr->length-n);
+    }
+}
+
 void* flarrGet(flArray* flarr, flint_t index){
     if(index < 0) index = 0;
 
@@ -125,6 +133,36 @@ flint_t flarrGets(flArray* flarr, flint_t index, flint_t count, void* destBuf){
     memcpy( destBuf, _flarrGet(flarr, index), count*flarr->elemSize );
 
     return count;
+}
+
+inline static void shiftLeft(flArray* flarr, flint_t count){
+    flint_t srcElemCount = flarr->length - count;
+    if(srcElemCount <= 0) return;
+    
+    memcpy(_flarrGet(flarr, 0), _flarrGet(flarr, count), srcElemCount*flarr->elemSize);
+}
+
+inline static void shiftRight(flArray* flarr, flint_t count){
+    flint_t srcElemCount = flarr->length - count;
+    if(srcElemCount <= 0) return;
+
+    memcpy(_flarrGet(flarr, count), _flarrGet(flarr, 0), srcElemCount*flarr->elemSize);
+}
+
+void flarrShift(flArray* flarr, flint_t n){
+    if( n < 0) shiftLeft(flarr, -1*n);
+    else shiftRight(flarr, n);
+}
+
+void flarrShiftAndFit(flArray* flarr, flint_t n){
+    if( n < 0){
+        flint_t count = -1*n;
+        shiftLeft(flarr, count);
+        flarrSetLength(flarr, flarr->length-count);
+    }else{
+        flarrSetLength(flarr, flarr->length+n);
+        shiftRight(flarr, n);
+    }
 }
 
 // void* flarrFind(flArray* flarr, const void * dataBytesPtr){

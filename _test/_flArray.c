@@ -150,6 +150,61 @@ static bool _flarrTestGets(){
     flarrFree(intArr);
 
     printf("\n_flarrTestGets: TEST OK");
+
+    return true;
+}
+
+static bool _flarrTestShift(){
+    flArray* intArr = flarrNew(0, sizeof(int));
+    int nums[5] = {1, 2, 3, 4, 5};
+    int numDest[5];
+    flarrPushs(intArr, nums, sizeof(nums) / sizeof(*nums));
+
+    flarrShift(intArr, -2);//perform left shift
+    flarrGets(intArr, 0, 5, numDest);
+    if( !(numDest[0] == 3 && numDest[1] == 4 && numDest[2] == 5 && 
+          numDest[3] == 4 && numDest[4] == 5) ){
+        flerrHandle("\nTESf _flarrTestShift: Test Failed !1");
+    }
+
+    flarrShift(intArr, 3);//perform right shift
+    flarrGets(intArr, 0, 5, numDest);
+    if( !(numDest[0] == 3 && numDest[1] == 4 && numDest[2] == 5 && 
+          numDest[3] == 3 && numDest[4] == 4) ){
+        flerrHandle("\nTESf _flarrTestShift: Test Failed !2");
+    }
+
+    flarrFree(intArr);
+
+    printf("\n_flarrTestShift: TEST OK");
+
+    return true;
+}
+
+static bool _flarrTestShiftAndFit(){
+    flArray* intArr = flarrNew(0, sizeof(int));
+    int nums[5] = {1, 2, 3, 4, 5};
+    int numDest[7];
+    flarrPushs(intArr, nums, sizeof(nums) / sizeof(*nums));
+
+    flarrShiftAndFit(intArr, 2);//perform right shift and fit
+    flarrGets(intArr, 0, 7, numDest);
+    if( !(intArr->length == 7 && numDest[0] == 1 && numDest[1] == 2 && numDest[2] == 1 && 
+          numDest[3] == 2 && numDest[4] == 3 && numDest[5] == 4 && numDest[6] == 5 ) ){
+        flerrHandle("\nTESf _flarrTestShiftAndFit: Test Failed !1");
+    }
+
+    flarrShiftAndFit(intArr, -4);//perform left shift and fit
+    flarrGets(intArr, 0, 3, numDest);
+    if( !(intArr->length == 3 && numDest[0] == 3 && numDest[1] == 4 && numDest[2] == 5) ){
+        flerrHandle("\nTESf _flarrTestShiftAndFit: Test Failed !2");
+    }
+
+    flarrFree(intArr);
+
+    printf("\n_flarrTestShiftAndFit: TEST OK");
+
+    return true;
 }
 
 bool _flarrRunTests(){
@@ -160,6 +215,8 @@ bool _flarrRunTests(){
     _flarrstrTestPop();
     _flarrTestPushs();
     _flarrTestGets();
+    _flarrTestShift();
+    _flarrTestShiftAndFit();
 
     return true;
 }
