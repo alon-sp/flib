@@ -8,9 +8,11 @@
 #include"common/container/flArray.h"
 #include"common/entity/flEntity.h"
 
-#define flmemMalloc(nbytes) malloc(nbytes)
+void* flmemMalloc(flint_t nbytes);
+
 #define flmemFree(mptr) free(mptr)
-#define flmemRealloc(mptr, nbytes) realloc(mptr, nbytes)
+
+void* flmemRealloc(void* mptr, flint_t nbytes);
 
 #define flMillis() 0
 
