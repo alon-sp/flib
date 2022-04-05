@@ -136,14 +136,28 @@ void flarrShiftAndFit(flArray* flarr, flint_t n);
 // void* flarrFind(flArray* flarr, const void * dataBytesPtr);
 
 /**
- * @brief Write first $flarr->elemSize bytes of $dataBytesPtr at the given index
- * 
+ * @brief Write the first $flarr->elemSize bytes of $dataBytesPtr at the given index in $flarr
+ * @note Call the global error handler function if the given index is out of bound.
  * @param flarr 
  * @param index 
  * @param dataBytesPtr 
  * @return pointer to the written element at the given index | NULL if index >= $flarr->length 
  */
 void* flarrPut(flArray* flarr, flint_t index, const void* dataBytesPtr);
+
+/**
+ * @brief Write the first ${count*flarr->elemSize} bytes of $dataBytesPtr
+ * beginning at the given index in $flarr
+ * @note Call the global error handler function if the given index is out of bound.
+ * @note If ${count + index > flarr->length} the array length is expanded to accomodate
+ * the added element(s).
+ * @param flarr 
+ * @param index 
+ * @param dataBytesPtr 
+ * @param count 
+ * @return pointer to the first written element at the given index | NULL if index >= $flarr->length 
+ */
+void* flarrPuts(flArray* flarr, flint_t index, const void* dataBytesPtr, flint_t count);
 
 /**
  * @brief These micros are not intended to be use directly; if they must be use,

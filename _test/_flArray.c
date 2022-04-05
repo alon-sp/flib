@@ -69,6 +69,28 @@ static bool _flarrTestPut(){
     return true;
 }
 
+static bool _flarrTestPuts(){
+    flArray* str = flarrNew(10, sizeof(char));
+    flarrSetLength(str, 4);
+
+    flarrPuts(str, 0, "Hello", strlen("Hello")+1 );
+
+    if(strcmp("Hello", (char*)flarrGet(str, 0)) != 0){
+        flerrHandle("\nTESf _flarrTestPuts: Test Failed !1");
+    }
+
+    flarrPuts(str, 1, "EL", strlen("EL") );
+    if(strcmp("HELlo", (char*)flarrGet(str, 0)) != 0){
+        flerrHandle("\nTESf _flarrTestPuts: Test Failed !2");
+    }
+
+    flarrFree(str);
+
+    printf("\n_flarrTestPuts: TEST OK");
+
+    return true;
+}
+
 static bool _flarrstrTestPush(){
     flArray* str = flarrNew(5, sizeof(char));
     flarrstrPush(str, "Hello");
@@ -217,6 +239,7 @@ bool _flarrRunTests(){
     _flarrTestGets();
     _flarrTestShift();
     _flarrTestShiftAndFit();
+    _flarrTestPuts();
 
     return true;
 }

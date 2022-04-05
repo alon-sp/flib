@@ -188,6 +188,23 @@ void* flarrPut(flArray* flarr, flint_t index, const void* dataBytesPtr){
     return _flarrGet(flarr, index);
 }
 
+void* flarrPuts(flArray* flarr, flint_t index, const void* dataBytesPtr, flint_t count){
+    if(index < 0) index = 0;
+
+    if(index >= flarr->length){
+        flerrHandle("\nIOB flarrPut !1");
+        return NULL;
+    }
+
+    flint_t overflowCount = ( index+count > flarr->length )? index+count - flarr->length : 0;
+    if(overflowCount) count = count - overflowCount;
+
+    _flarrPuts(flarr, index, dataBytesPtr, count);
+    if(overflowCount) flarrPushs(flarr, (flbyt_t*)dataBytesPtr + count*flarr->elemSize, overflowCount);
+
+    return _flarrGet(flarr, index);
+}
+
 /*----------STRING PROCESSING UTILS----------*/
 const char* flarrstrPush(flArray* chArr, const char* strv){
 
