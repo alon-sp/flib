@@ -66,6 +66,9 @@ static bool runStrAdderTest(){
     flentIOport* adderNetOut = flentFindPortByName(adder3, flentipn3);
 
     //Set up some inputs for the network
+    // flentiopWriteDataMode(inp1, flentdmoPOST);
+    // flentiopWriteDataID(inp1, flentdidSTRING);
+    // flentiopWriteData(inp1, "a", strlen("a")+1 );
     flentiopWrite(inp1, flentiodNew(flentdmoPOST, flentdidSTRING, "a", strlen("a")+1));
     flentiopWrite(inp2, flentiodNew(flentdmoPOST, flentdidSTRING, "b", strlen("b")+1));
     flentiopWrite(inp3, flentiodNew(flentdmoPOST, flentdidSTRING, "c", strlen("c")+1));
@@ -86,7 +89,7 @@ static bool runStrAdderTest(){
 
 bool _flentRunTests(){
     if(!runStrAdderTest()){
-        flerrHandle("\nTESf _flentRunTests: Test Failed !1(rflarrNewunStrAdderTest)");
+        flerrHandle("\nTESf _flentRunTests: Test Failed !1(runStrAdderTest)");
     }
     return true;
 }
