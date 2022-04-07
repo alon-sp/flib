@@ -25,24 +25,23 @@ typedef int8_t flentdmo_t;
 #define flentdmoNIL                        0
 
 /**
- * @brief Command for requesting a particular data.
+ * @brief mode for requesting data.
  */
 #define flentdmoGET                        1
 
 /**
- * @brief Command to indicate that a component is still processing an input.
+ * @brief mode to indicate that an entity is still processing an input.
  * 
  */
 #define flentdmoPROCI                      2
+
 /**
- * @brief command for updating a particular data, intended to be use 
- * by parent/controller entities only. 
- */
-#define flentdmoSET                        3
-/**
- * @brief command for posting notification, intended to be use by both controller and component entity.
+ * @brief mode for posting data/notification
  */
 #define flentdmoPOST                       4
+
+//mode for posting pointer to data
+#define flentdmoPOSTDP                     5
 
 typedef int8_t flentsyc_t;
 ///SYC -> system command

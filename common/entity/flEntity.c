@@ -5,19 +5,25 @@
 
 /*----------flentIOport functions----------*/
 
-flentIOport* flentiopNew(bool inputOnly, flentipn_t ipname, flentIOport* targetPort){
+flentIOport* flentiopNew(flentipn_t ipname, flentIOport* targetPort, bool ownsOutputBuffer, flArray* outputBuf){
     flentIOport* iop = flmemMalloc(sizeof(flentIOport));
 
-    flArray* outputBuffer = NULL;
-    if(!inputOnly){
-        outputBuffer = flarrNew(sizeof(flbyt_t)+sizeof(flentdid_t)+sizeof(void*), sizeof(flbyt_t)); 
-        //Write default output value
-        flentiodEncode(flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0), outputBuffer);
+    _flentiopSetOwnsObuf(iop, ownsOutputBuffer);
+
+    if(iop->_ownsObuf && !outputBuf){
+        outputBuf = flarrNew(flentiodDATA_BUFFER_MIN_SIZE, sizeof(flbyt_t)); 
     }
-    _flentiopSetObuf(iop, outputBuffer);
+
+    if(outputBuf){
+        //Write default output value
+        flentiodEncode(flentiodNIL, outputBuf);
+    }
+
+    _flentiopSetObuf(iop, outputBuf);
 
     flentiopSetName(iop, ipname);
     flentiopSetEntity(iop, NULL);
+    flentiopSetProps(iop, NULL);
 
     
     flentiopLink(iop, targetPort);
@@ -30,7 +36,7 @@ void flentiopFree(flentIOport* iop){
 
     flentiopUnlink(iop);
 
-    if(iop->_obuf){
+    if(iop->_ownsObuf && iop->_obuf){
         flarrFree(iop->_obuf);
         _flentiopSetObuf(iop, NULL);
     }
