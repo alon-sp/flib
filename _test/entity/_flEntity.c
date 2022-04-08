@@ -6,9 +6,8 @@
 typedef struct _strAdderEnt _strAdderEnt;
 
 static const char* strAdderEntReadInput(flentIOport* port){
-    flentIOdata iod = flentiopRead(port);
-    if(iod.mode == flentdmoPOST && iod.id == flentdidSTRING){
-        return (const char*)iod.data;
+    if(flentiopGetInputMode(port) == flentdmoPOST && flentiopGetInputID(port) == flentdidSTRING){
+        return (const char*)flentiopGetInputData(port);
     }
     return "";
 }
@@ -19,7 +18,7 @@ static void strAdderEntTick(flEntity* stradder, flentXenv* xenv){
 
     //concatenate the two strings and write them to the output
     flentIOport* output = flentFindPortByName(stradder, flentipn3);
-    flentiopWrite(output, flentiodNew( flentdmoPOST, flentdidSTRING, (void*)input1str, strlen(input1str)) );
+    flentiopPuts( output, flentdmoPOST, flentdidSTRING, (void*)input1str, strlen(input1str) );
     flentiopAppendData(output, input2str, strlen(input2str)+1/*include null char*/);
 }
 
@@ -66,20 +65,16 @@ static bool runStrAdderTest(){
     flentIOport* adderNetOut = flentFindPortByName(adder3, flentipn3);
 
     //Set up some inputs for the network
-    // flentiopWriteDataMode(inp1, flentdmoPOST);
-    // flentiopWriteDataID(inp1, flentdidSTRING);
-    // flentiopWriteData(inp1, "a", strlen("a")+1 );
-    flentiopWrite(inp1, flentiodNew(flentdmoPOST, flentdidSTRING, "a", strlen("a")+1));
-    flentiopWrite(inp2, flentiodNew(flentdmoPOST, flentdidSTRING, "b", strlen("b")+1));
-    flentiopWrite(inp3, flentiodNew(flentdmoPOST, flentdidSTRING, "c", strlen("c")+1));
-    flentiopWrite(inp4, flentiodNew(flentdmoPOST, flentdidSTRING, "d", strlen("d")+1));
+    flentiopPuts(inp1, flentdmoPOST, flentdidSTRING, "a", strlen("a")+1);
+    flentiopPuts(inp2, flentdmoPOST, flentdidSTRING, "b", strlen("b")+1);
+    flentiopPuts(inp3, flentdmoPOST, flentdidSTRING, "c", strlen("c")+1);
+    flentiopPuts(inp4, flentdmoPOST, flentdidSTRING, "d", strlen("d")+1);
 
     //Run the environment at least 2 times and read the output of the network.
     flentxevTick(xenv, 0, 0);
     flentxevTick(xenv, 0, 0);
 
-    flentIOdata iod = flentiopReadOutput(adderNetOut);
-    bool status = ( iod.mode == flentdmoPOST && iod.id == flentdidSTRING && strcmp("abcd", (const char*)iod.data) == 0 );
+    bool status = ( flentiopGetInputMode(adderNetOut) == flentdmoPOST && flentiopGetInputID(adderNetOut) == flentdidSTRING && strcmp("abcd", (const char*)flentiopGetInputData(adderNetOut)) == 0 );
 
     //cleanup
     flentxevFree(xenv, true);

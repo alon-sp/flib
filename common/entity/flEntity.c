@@ -3,21 +3,35 @@
 
 #include"flEntity.h"
 
+/*----------flentIOdata functions----------*/
+
+void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, void* dataPtr, flint_t dataSize){
+    flentiodPutMode(iod, mode);
+    flentiodPutID(iod, id);
+    flentiodPutData(iod, dataPtr, dataSize);
+}
+
 /*----------flentIOport functions----------*/
 
-flentIOport* flentiopNew(bool inputOnly, flentipn_t ipname, flentIOport* targetPort){
+flentIOport* flentiopNew(flentipn_t ipname, flentIOport* targetPort, bool ownsOutputBuffer, flArray* outputBuf){
     flentIOport* iop = flmemMalloc(sizeof(flentIOport));
 
-    flArray* outputBuffer = NULL;
-    if(!inputOnly){
-        outputBuffer = flarrNew(sizeof(flbyt_t)+sizeof(flentdid_t)+sizeof(void*), sizeof(flbyt_t)); 
-        //Write default output value
-        flentiodEncode(flentiodNew(flentdmoNIL, flentdidNIL, NULL, 0), outputBuffer);
+    _flentiopSetOwnsObuf(iop, ownsOutputBuffer);
+
+    if(iop->_ownsObuf && !outputBuf){
+        outputBuf = flentiodNew(flentiodDATA_BUFFER_MIN_SIZE, sizeof(flbyt_t)); 
     }
-    _flentiopSetObuf(iop, outputBuffer);
+
+    if(outputBuf){
+        //Write default output value
+        flentiodClear(outputBuf, flentdmoNIL);
+    }
+
+    _flentiopSetObuf(iop, outputBuf);
 
     flentiopSetName(iop, ipname);
     flentiopSetEntity(iop, NULL);
+    flentiopSetProps(iop, NULL);
 
     
     flentiopLink(iop, targetPort);
@@ -30,7 +44,7 @@ void flentiopFree(flentIOport* iop){
 
     flentiopUnlink(iop);
 
-    if(iop->_obuf){
+    if(iop->_ownsObuf && iop->_obuf){
         flarrFree(iop->_obuf);
         _flentiopSetObuf(iop, NULL);
     }
@@ -60,40 +74,6 @@ void flentiopWrite(flentIOport* iop, flentIOdata iodata){
         flentEnableTick(iop->_linkedPort->entity);
     }
     flentiodEncode(iodata, iop->_obuf);
-}
-
-flentIOdata flentiodNew(int8_t dataMode, flentdid_t dataId, void* data, flint_t dataSize){
-    flentIOdata iod = {.mode = dataMode, .id = dataId, .data = data, .size = dataSize};
-    return iod;
-}
-
-void flentiodEncode(flentIOdata iod, flArray* destArrbuf){
-
-    flarrSetLength( destArrbuf, 0 );
-
-    flarrPush( destArrbuf, &iod.mode);
-    flarrPushs( destArrbuf, &iod.id, sizeof(flentdid_t) );
-
-    flbyt_t defaultData = 0;
-    if(!iod.data){
-        iod.data = &defaultData;
-        iod.size = sizeof(flbyt_t);
-    }
-    flarrPushs( destArrbuf, iod.data, iod.size );
-
-}
-
-flentIOdata flentiodDecode(flArray* arrBuf){
-    flentIOdata iod;
-
-    flbyt_t* byteBuffer = (flbyt_t*)flarrGet( arrBuf, 0);
-
-    iod.mode = *byteBuffer;
-    iod.id = *( (flentdid_t*)(byteBuffer+sizeof(flbyt_t)) );
-    iod.data = byteBuffer+sizeof(flbyt_t)+sizeof(flentdid_t);
-    iod.size = arrBuf->length - ( sizeof(flbyt_t)+sizeof(flentdid_t) );
-
-    return iod;
 }
 
 /*----------flEntity functions---------*/
