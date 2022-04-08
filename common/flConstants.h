@@ -43,6 +43,9 @@ typedef int8_t flentdmo_t;
 //mode for posting pointer to data
 #define flentdmoPOSTDP                     4
 
+//mode for posting pointer to data
+#define flentdmoPOSTDP                     5
+
 typedef int8_t flentsyc_t;
 ///SYC -> system command
 
