@@ -182,6 +182,9 @@ bool flentAddPort(flEntity* ent, flentIOport* port){
     if(port) flentiopSetEntity(port, ent);//just incase
 
     if(!flentFindPort(ent, port)){
+
+        ent->hscmd(flentsycIOPORT_ADD, port);//Notify target entity of the new port to be added
+
         flentIOport** ploc = flentFindPort(ent, NULL);//check for any available slots
 
         if(ploc) *ploc = port;
@@ -194,6 +197,8 @@ bool flentAddPort(flEntity* ent, flentIOport* port){
 void flentRemovePort(flEntity* ent, flentIOport* port){
     flentIOport** ploc = flentFindPort(ent, port);
     if(ploc){
+        ent->hscmd(flentsycIOPORT_REMOVE, *ploc);//Notify target entity
+
         flentiopSetEntity(*ploc, NULL);
         *ploc = NULL;
     }

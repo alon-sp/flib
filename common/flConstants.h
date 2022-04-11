@@ -44,10 +44,19 @@ typedef int8_t flentsyc_t;
  */
 #define flentsycNIL                        0
 
-/**
- * @brief This command should cause an entity to perform cleanup operation on custom properties
- * excluding custom properties that have been registered as components.
- */
+//This command is sent whenever an entity is about to be destroyed.
+//An entity on receving this command must perform cleanup operation on custom props as required.
+///@arg void
 #define flentsycCLEANUP                    1
+
+//This command is a notification that is sent whenever a new port is about to be
+//added to an entity
+///@arg flentIOport* : Pointer to the port to be added
+#define flentsycIOPORT_ADD                 2
+
+//This command is a notification that is sent whenever a port is about to be
+//remove from an entity.
+///@arg flentIOport* : Pointer to the port to be removed
+#define flentsycIOPORT_REMOVE              3
 
 #endif
