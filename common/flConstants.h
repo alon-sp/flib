@@ -15,7 +15,7 @@ typedef uint32_t flentcco_t;
 ///fl entity
 //----------
 
-typedef int8_t flentdmo_t;
+typedef flbyt_t flentdmo_t;
 ///@note flentdmo -> fl Entity Data Mode 
 
 /**
@@ -30,21 +30,10 @@ typedef int8_t flentdmo_t;
 #define flentdmoGET                        1
 
 /**
- * @brief mode to indicate that an entity is still processing an input.
- * 
- */
-#define flentdmoPROCI                      2
-
-/**
  * @brief mode for posting data/notification
  */
-#define flentdmoPOST                       3
+#define flentdmoPOST                       2
 
-//mode for posting pointer to data
-#define flentdmoPOSTDP                     4
-
-//mode for posting pointer to data
-#define flentdmoPOSTDP                     5
 
 typedef int8_t flentsyc_t;
 ///SYC -> system command
