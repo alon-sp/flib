@@ -13,12 +13,11 @@ void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, void* dataPt
 
 /*----------flentIOport functions----------*/
 
-flentIOport* flentiopNew(flentipn_t ipname, flentIOport* targetPort, bool ownsOutputBuffer, flArray* outputBuf){
+flentIOport* flentiopNew(flentipn_t ipname, flentIOport* targetPort, bool hasOutputBuffer){
     flentIOport* iop = flmemMalloc(sizeof(flentIOport));
 
-    _flentiopSetOwnsObuf(iop, ownsOutputBuffer);
-
-    if(iop->_ownsObuf && !outputBuf){
+    flentIOdata* outputBuf = NULL;
+    if(hasOutputBuffer){
         outputBuf = flentiodNew(flentiodDATA_BUFFER_MIN_SIZE, sizeof(flbyt_t)); 
     }
 
@@ -44,7 +43,7 @@ void flentiopFree(flentIOport* iop){
 
     flentiopUnlink(iop);
 
-    if(iop->_ownsObuf && iop->_obuf){
+    if(iop->_obuf){
         flarrFree(iop->_obuf);
         _flentiopSetObuf(iop, NULL);
     }
@@ -66,14 +65,6 @@ flentIOport* flentiopUnlink(flentIOport* iop){
     _flentiopSetlinkedPort(iop, NULL);
 
     return linkedPort;
-}
-
-void flentiopWrite(flentIOport* iop, flentIOdata iodata){
-    if(iop->_linkedPort && iop->_linkedPort->entity){
-        //notify the target entity of new input
-        flentEnableTick(iop->_linkedPort->entity);
-    }
-    flentiodEncode(iodata, iop->_obuf);
 }
 
 /*----------flEntity functions---------*/

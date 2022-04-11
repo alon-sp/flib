@@ -1,6 +1,22 @@
 
 #include"_flEntity.h"
 
+/*-----TEST IOport-----*/
+static bool runPortReadAndWriteTest(){
+    flentIOport* ioPort = flentiopNewIOport(flentipn1, NULL);
+    
+    flentiopPuts(ioPort, flentdmoPOST, flentdidSTRING, "Hello", strlen("Hello")+1);
+
+    flentdmo_t mode = flentiopGetOutputMode(ioPort);
+    flentdid_t id = flentiopGetOutputID(ioPort);
+    const char* hellostr = (const char*)flentiopGetOutputData(ioPort);
+
+    bool status = ( mode == flentdmoPOST &&  id == flentdidSTRING && strcmp("Hello", hellostr) == 0 );
+
+    flentiopFree(ioPort);
+
+    return status;
+}
 
 /*-----TEST ENTITY:strAdderEnt-----*/
 typedef struct _strAdderEnt _strAdderEnt;
@@ -19,7 +35,7 @@ static void strAdderEntTick(flEntity* stradder, flentXenv* xenv){
     //concatenate the two strings and write them to the output
     flentIOport* output = flentFindPortByName(stradder, flentipn3);
     flentiopPuts( output, flentdmoPOST, flentdidSTRING, (void*)input1str, strlen(input1str) );
-    flentiopAppendData(output, input2str, strlen(input2str)+1/*include null char*/);
+    flentiopAppend(output, input2str, strlen(input2str)+1/*include null char*/);
 }
 
 flEntity* strAdderEntNew(flentXenv* xenv){
@@ -74,7 +90,9 @@ static bool runStrAdderTest(){
     flentxevTick(xenv, 0, 0);
     flentxevTick(xenv, 0, 0);
 
-    bool status = ( flentiopGetInputMode(adderNetOut) == flentdmoPOST && flentiopGetInputID(adderNetOut) == flentdidSTRING && strcmp("abcd", (const char*)flentiopGetInputData(adderNetOut)) == 0 );
+    bool status = ( flentiopOmo(adderNetOut) == flentdmoPOST && 
+                    flentiopOid(adderNetOut) == flentdidSTRING && 
+                    strcmp("abcd", (const char*)flentiopOdt(adderNetOut)) == 0 );
 
     //cleanup
     flentxevFree(xenv, true);
@@ -83,8 +101,14 @@ static bool runStrAdderTest(){
 }
 
 bool _flentRunTests(){
-    if(!runStrAdderTest()){
-        flerrHandle("\nTESf _flentRunTests: Test Failed !1(runStrAdderTest)");
+
+    if(!runPortReadAndWriteTest()){
+        flerrHandle("\nTESf _flentRunTests: Test Failed !1(runPortReadAndWriteTest)");
     }
+
+    if(!runStrAdderTest()){
+        flerrHandle("\nTESf _flentRunTests: Test Failed !2(runStrAdderTest)");
+    }
+
     return true;
 }
