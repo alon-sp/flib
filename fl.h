@@ -4,6 +4,7 @@
 #include<stdlib.h>
 
 #include"common/flConstants.h"
+#include"common/util/flUtil.h"
 #include"common/flError.h"
 #include"common/container/flArray.h"
 #include"common/entity/flEntity.h"
