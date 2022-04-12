@@ -126,7 +126,7 @@ void flentFree(flEntity* ent, flentXenv* xenv){
     if(!ent) return;
 
     //Send cleanup command to entity before destroying it.
-    ent->hscmd(flentsycCLEANUP, NULL);
+    ent->hscmd(flentsycCLEANUP, ent);
 
     //remove entiy from environment before destroying
     if(xenv) flentxevRemoveEntity(xenv, ent);
