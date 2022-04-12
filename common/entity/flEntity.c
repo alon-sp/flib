@@ -148,6 +148,8 @@ void flentFree(flEntity* ent, flentXenv* xenv){
 }
 
 flentIOport* flentFindPortByName(flEntity* ent, flentipn_t portName){
+    if(!ent->ioports) return NULL;
+
     for(int i = 0; i<ent->ioports->length; i++){
         flentIOport** ploc = (flentIOport**)flarrGet(ent->ioports, i);
         if( *ploc && (*ploc)->name == portName ) return *ploc;
@@ -207,6 +209,15 @@ void flentRemovePort(flEntity* ent, flentIOport* port){
 void flentDeletePort(flEntity* ent, flentIOport* port){
     flentRemovePort(ent, port);
     flentiopFree(port);
+}
+
+void flentForEachPort(flEntity* ent, flentForEachPortCb_tf cb, void* cbArgs){
+    if(!ent->ioports) return;
+    
+    for(int i = 0; i<ent->ioports->length; i++){
+        flentIOport** ploc = (flentIOport**)flarrGet(ent->ioports, i);
+        if(*ploc && cb) cb(*ploc, cbArgs);
+    }
 }
 
 /*----------flentXenv functions---------*/

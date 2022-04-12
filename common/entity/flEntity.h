@@ -181,6 +181,16 @@ void flentRemovePort(flEntity* ent, flentIOport* port);
  */
 void flentDeletePort(flEntity* ent, flentIOport* port);
 
+typedef void (*flentForEachPortCb_tf)(flentIOport* port, void* args);
+
+/**
+ * @brief Apply the given callback to each port of the given entity.
+ * @param ent
+ * @param cb The callback to be called on each port
+ * @param cbArgs additional arguments for the callback function
+ */
+void flentForEachPort(flEntity* ent, flentForEachPortCb_tf cb, void* cbArgs);
+
 struct flentXenv{
   flArray * const entities;
   #define _flentxevSetEntities(xenv, ents) *( (flArray **)(&(xenv)->entities) ) = ents
