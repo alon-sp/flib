@@ -5,7 +5,7 @@
 
 /*----------flentIOdata functions----------*/
 
-void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, void* dataPtr, flint_t dataSize){
+void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, const void* dataPtr, flint_t dataSize){
     flentiodPutMode(iod, mode);
     flentiodPutID(iod, id);
     flentiodPutData(iod, dataPtr, dataSize);

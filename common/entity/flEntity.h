@@ -57,7 +57,7 @@ typedef flArray flentIOdata;
  * @param dataPtr 
  * @param dataSize 
  */
-void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, void* dataPtr, flint_t dataSize);
+void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, const void* dataPtr, flint_t dataSize);
 
 #define flentiodCopy(destIOD, srcIOD) flarrPuts(destIOD, 0, srcIOD->data, srcIOD->length)
 
