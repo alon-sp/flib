@@ -37,9 +37,11 @@ bool flarrAllocCapacity(flArray* arr, flint_t newCapacity){
 bool flarrSetLength(flArray* arr, flint_t newLength){
     if(newLength < 0) newLength = 0;
 
-    if(newLength >= arr->capacity && !flarrAllocCapacity(arr, newLength)) return NULL;
+    if(newLength >= arr->capacity && !flarrAllocCapacity(arr, newLength)) return false;
     
     _flarrSetLength(arr, newLength);
+
+    return true;
 }
 
 flArray* flarrNew(flint_t initialCapacity, flint_t sizeOfDatatype){
