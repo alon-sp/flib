@@ -93,7 +93,7 @@ void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, const void* 
  */
 void flentiodPdPuts(flentIOdata* iod, flentdid_t id, void* dataPtr, flint_t dataSize, flvod_tf cb, void* cbArgPtr, flint_t cbArgSize);
 
-#define flentiodCopy(destIOD, srcIOD) flarrPuts(destIOD, 0, srcIOD->data, srcIOD->length)
+#define flentiodCopy(destIOD, srcIOD) ( flarrSetLength(destIOD, 0)? flarrPuts(destIOD, 0, srcIOD->data, srcIOD->length) : NULL )
 
 typedef void  (*flentTick_tf)(flEntity* self, flentXenv* xenv);
 typedef void* (*flentHscmd_tf)(flentsyc_t cmd, void *args);
@@ -127,6 +127,8 @@ struct flEntity{
   //An array of pointers to all input-output pairs ports of this entity.
   flArray * const ioports;
   #define _flentSetIOports(ent, _ioports) *( (flArray **)(&(ent)->ioports) ) = _ioports
+  #define _flentGetPort(ent, index) ( *(flentIOport**)_flarrGet((ent)->ioports, index) )
+  #define flentGetPort(ent, index) ( *(flentIOport**)flarrGet((ent)->ioports, index) )
 
   /**
    * @brief This method gets called by the ticker during every time frame if tick is enable.
@@ -306,8 +308,8 @@ struct flentIOport{
   #define _flentiopSetOutputProcessed(iop, bval) *( (bool*)&(iop)->outputProcessed ) = bval
   
   #define flentiopSetInputProcessed(iop, bval) do{\
-    if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
-    if(iop->_linkedPort) _flentiopSetOutputProcessed(iop->_linkedPort, bval);\
+    if((iop)->_linkedPort && (iop)->_linkedPort->entity) flentEnableTick((iop)->_linkedPort->entity);\
+    if((iop)->_linkedPort) _flentiopSetOutputProcessed((iop)->_linkedPort, bval);\
   }while(0)
 
   flEntity * const entity;
@@ -362,75 +364,85 @@ void flentiopLink(flentIOport* port1, flentIOport* port2);
  */
 flentIOport* flentiopUnlink(flentIOport* iop);
 
-#define _flentiopCheckPort(iop) (iop && iop->_obuf)
+#define _flentiopCheckPort(iop) (iop && (iop)->_obuf)
 
 //Micros for reading input data of a given port
-#define flentiopGetInputMode(iop)     (  _flentiopCheckPort(iop->_linkedPort)? flentiodMode(iop->_linkedPort->_obuf) : flentdmoNIL )
+#define flentiopGetInputMode(iop)     (  _flentiopCheckPort((iop)->_linkedPort)? flentiodMode((iop)->_linkedPort->_obuf) : flentdmoNIL )
 #define flentiopMo(iop)                   flentiopGetInputMode(iop)
 
-#define flentiopGetInputID(iop)       (  flentiodID(iop->_linkedPort->_obuf)      )
+#define flentiopGetInputID(iop)       (  flentiodID((iop)->_linkedPort->_obuf)      )
 #define flentiopID(iop)                  flentiopGetInputID(iop)
 
-#define flentiopGetInputData(iop)     (  flentiodData(iop->_linkedPort->_obuf)    )
+#define flentiopGetInputData(iop)     (  flentiodData((iop)->_linkedPort->_obuf)    )
 #define flentiopDt(iop)                  flentiopGetInputData(iop)
 
-#define flentiopGetInputSize(iop)     (  flentiodSize(iop->_linkedPort->_obuf)    )
+#define flentiopGetInputSize(iop)     (  flentiodSize((iop)->_linkedPort->_obuf)    )
 #define flentiopSz(iop)                  flentiopGetInputSize(iop)
 
-#define flentiopGetInputPdSize(iop)   (  flentiodPdSize(iop->_linkedPort->_obuf)    )
+#define flentiopGetInputPdSize(iop)   (  flentiodPdSize((iop)->_linkedPort->_obuf)    )
 #define flentiopPdSz(iop)                flentiopGetInputPdSize(iop)
 
-#define flentiopGetInputPdPtr(iop)    (  flentiodPdPtr(iop->_linkedPort->_obuf)    )
+#define flentiopGetInputPdPtr(iop)    (  flentiodPdPtr((iop)->_linkedPort->_obuf)    )
 #define flentiopPtr(iop)                 flentiopGetInputPdPtr(iop)
 
-#define flentiopGetInputPdDonecb(iop) (  flentiodPdDonecb(iop->_linkedPort->_obuf)    )
+#define flentiopGetInputPdDonecb(iop) (  flentiodPdDonecb((iop)->_linkedPort->_obuf)    )
 #define flentiopCb(iop)                  flentiopGetInputPdDonecb(iop)
 
-#define flentiopGetInputPdDonecbArgs(iop) (  flentiodPdDonecbArgs(iop->_linkedPort->_obuf)    )
+#define flentiopGetInputPdDonecbArgs(iop) (  flentiodPdDonecbArgs((iop)->_linkedPort->_obuf)    )
 #define flentiopArg(iop)                 flentiopGetInputPdDonecbArgs(iop)
 
 //Micros for writing data to the output of a given port
 #define flentiopPuts(iop, mode, id, dataPtr, dataSize) do{\
-    if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
-    flentiodPuts(iop->_obuf, mode, id, dataPtr, dataSize);\
+    if((iop)->_linkedPort && (iop)->_linkedPort->entity) flentEnableTick((iop)->_linkedPort->entity);\
+    flentiodPuts((iop)->_obuf, mode, id, dataPtr, dataSize);\
 }while(0)
 
 #define flentiopPdPuts(iop, id, dataPtr, dataSize, cb, cbArgPtr, cbArgSize) do{\
-    if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
-    flentiodPdPuts(iop->_obuf, id, dataPtr, dataSize, cb, cbArgPtr, cbArgSize);\
+    if((iop)->_linkedPort && (iop)->_linkedPort->entity) flentEnableTick((iop)->_linkedPort->entity);\
+    flentiodPdPuts((iop)->_obuf, id, dataPtr, dataSize, cb, cbArgPtr, cbArgSize);\
 }while(0)
 
 #define flentiopClear(iop, dataMode) do{\
-    if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
-    flentiodClear(iop->_obuf, dataMode);\
+    if((iop)->_linkedPort && (iop)->_linkedPort->entity) flentEnableTick((iop)->_linkedPort->entity);\
+    flentiodClear((iop)->_obuf, dataMode);\
 }while(0)
            
-#define flentiopAppend(iop, dataPtr, dataSize)  flentiodAppend(iop->_obuf, dataPtr, dataSize)
+#define flentiopAppend(iop, dataPtr, dataSize)  flentiodAppend((iop)->_obuf, dataPtr, dataSize)
+
+#define flentiopCopyOutput(destIop, srcIop) do{\
+  if((destIop)->_linkedPort && (destIop)->_linkedPort->entity) flentEnableTick((destIop)->_linkedPort->entity);\
+  flentiodCopy(destIop->_obuf, srcIop->_obuf);\
+}while(0)
+
+#define flentiopCopyInput(destIop, srcIop)\
+  if(srcIop->_linkedPort)flentiopCopyOutput(destIop, srcIop->_linkedPort)
 
 //Micros for reading output data of a given port
-#define flentiopGetOutputMode(iop)     (  _flentiopCheckPort(iop)? flentiodMode(iop->_obuf) : flentdmoNIL )
+#define flentiopGetOutputMode(iop)     (  _flentiopCheckPort(iop)? flentiodMode((iop)->_obuf) : flentdmoNIL )
 #define flentiopOmo(iop)                  flentiopGetOutputMode(iop)
 
-#define flentiopGetOutputID(iop)       (  flentiodID(iop->_obuf)      )
+#define flentiopGetOutputID(iop)       (  flentiodID((iop)->_obuf)      )
 #define flentiopOid(iop)                  flentiopGetOutputID(iop)
 
-#define flentiopGetOutputData(iop)     (  flentiodData(iop->_obuf)    )
+#define flentiopGetOutputData(iop)     (  flentiodData((iop)->_obuf)    )
 #define flentiopOdt(iop)                  flentiopGetOutputData(iop)
 
-#define flentiopGetOutputSize(iop)     (  flentiodSize(iop->_obuf)    )
+#define flentiopGetOutputSize(iop)     (  flentiodSize((iop)->_obuf)    )
 #define flentiopOsz(iop)                  flentiopGetOutputSize(iop)
 
-#define flentiopGetOutputPdSize(iop)   (  flentiodPdSize(iop->_obuf)    )
+#define flentiopGetOutputPdSize(iop)   (  flentiodPdSize((iop)->_obuf)    )
 #define flentiopOdpSz(iop)                flentiopGetOutputPdSize(iop)
 
-#define flentiopGetOutputPdPtr(iop)    (  flentiodPdPtr(iop->_obuf)    )
+#define flentiopGetOutputPdPtr(iop)    (  flentiodPdPtr((iop)->_obuf)    )
 #define flentiopOptr(iop)                flentiopGetOutputPdPtr(iop)
 
-#define flentiopGetOutputPdDonecb(iop) (  flentiodPdDonecb(iop->_obuf)    )
+#define flentiopGetOutputPdDonecb(iop) (  flentiodPdDonecb((iop)->_obuf)    )
 #define flentiopOcb(iop)                  flentiopGetOutputPdDonecb(iop)
 
-#define flentiopGetOutputPdDonecbArgs(iop) (  flentiodPdDonecbArgs(iop->_obuf)    )
+#define flentiopGetOutputPdDonecbArgs(iop) (  flentiodPdDonecbArgs((iop)->_obuf)    )
 #define flentiopOarg(iop)                 flentiopGetOutputPdDonecbArgs(iop)
 
+/*--------------------STANDARD ENTITIES--------------------*/
+flEntity* flentstdDataToPtrNew(flentXenv* xenv);
 
 #endif//FLENTITYHEADERH_INCLUDED

@@ -310,4 +310,71 @@ void flentxevRemoveEntity(flentXenv* xenv, flEntity* ent){
     }
 }
 
+/*--------------------STANDARD ENTITIES--------------------*/
+
+//--DataToPtr--
+
+#define _dtpGetProps(ent) ((flArray*)(ent)->props)
+
+void* flentstdDataToPtrDonecb(void* args){
+    flarrSetLength( (flArray*)_dtpGetProps((flEntity*)args), 0);
+    flentiopSetInputProcessed(flentGetPort((flEntity*)args, 0), true);
+    return NULL;
+}
+
+static void flentstdDataToPtrTick(flEntity* ent, flentXenv* xenv){
+    flentIOport* dataPort = flentGetPort(ent, 0);
+    flentIOport* ptrPort = flentGetPort(ent, 1);
+    flArray* ep = _flentDtpGetProps(ent);
+
+    if(flentiopMo(ptrPort) != flentdmoNIL || 
+        (flentiopMo(ptrPort) == flentdmoNIL && flentiopOmo(dataPort) != flentdmoNIL)  ){
+            flentiopCopyInput(dataPort, ptrPort);
+        }
+
+    if(flentiopMo(dataPort) == flentdmoNIL || (ep && ep->length)){
+        flentDisableTick(ent);
+        return;
+    }
+
+    if(flentiopMo(dataPort) != flentdmoPOSTDP){
+        if(!ep){
+            ep = flarrNew(flentiopPdSz(dataPort), sizeof(flbyt_t));
+            flentSetProps(ent, ep);
+        }
+        flarrPuts(ep, 0, flentiopPtr(dataPort), flentiopPdSz(dataPort));
+        flentiopPdPuts(ptrPort, flentiopID(dataPort), 
+            flarrGet(ep, 0), ep->length, 
+            flentstdDataToPtrDonecb, ent, sizeof(ent)  );
+        flentiopSetInputProcessed(dataPort, false);
+    }else{
+        flentiopCopyInput(ptrPort, dataPort);
+    }
+
+}
+
+static void* flentstdDataToPtrHscmd(flentsyc_t cmd, void* args){
+    if(cmd == flentsycCLEANUP){
+        flEntity* ent = (flEntity*)args;
+        if(ent->props){
+            flarrFree((flArray*)ent->props);
+            flentSetProps(ent, NULL);
+        }
+    }
+}
+
+flEntity* flentstdDataToPtrNew(flentXenv* xenv){
+    flEntity* ent = flentNew(xenv, 0, 2);
+    flentSetTick(ent, flentstdDataToPtrTick);
+    flentSetHscmd(ent, flentstdDataToPtrHscmd);
+
+    flentAddPort(ent, flentiopNewIOport(flentipnDATA, NULL));//port index: 0
+    flentAddPort(ent, flentiopNewIOport(flentipnPTR, NULL));//port index: 1
+
+    return ent;
+}
+
+#undef _dtpGetProps
+
+
 #undef _flentInitializeIOports
