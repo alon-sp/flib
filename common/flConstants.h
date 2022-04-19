@@ -12,6 +12,9 @@ typedef float flnum_t;
 
 typedef uint32_t flentcco_t;
 
+//fl function pointers types
+typedef void* (*flvod_tf)(void* args);
+
 ///fl entity
 //----------
 
@@ -33,6 +36,11 @@ typedef flbyt_t flentdmo_t;
  * @brief mode for posting data/notification
  */
 #define flentdmoPOST                       2
+
+/**
+ * @brief mode for posting pointer to data
+ */
+#define flentdmoPOSTDP                     3
 
 
 typedef int8_t flentsyc_t;

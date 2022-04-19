@@ -23,29 +23,49 @@ typedef flArray flentIOdata;
 *The default data layout of an IO data is as shown:
 *|<--sizeof(flbyt_t)-->|<--sizeof(flentdid_t)-->|<--buffer len -. -->|
 *|--data mode----------|--data id---------------|--data--------------|
+*
+*If data mode : flentdmoPOSTDP, the data is layout as shown below
+*|<--sizeof(flbyt_t)-->|<--sizeof(flentdid_t)-->|<--sizeof(flint_t)-->|<--sizeof(void*)-->|<--sizeof( flentiodDoneCb_tf )-->|<--buffer len -. -->|
+*|--data mode----------|--data id---------------|--data size----------|--data pointer-----|--done callback------------------|--callback args-----|
 */
 #define flentiodDATA_BUFFER_MIN_SIZE ( sizeof(flbyt_t) + sizeof(flentdid_t) + sizeof(void*) )
 
-#define flentiodMODE_INDEX         0
-#define flentiodID_INDEX         ( flentiodMODE_INDEX + sizeof(flbyt_t)              )
-#define flentiodDATA_INDEX       ( flentiodID_INDEX + sizeof(flentdid_t)             )
+#define flentiodMODE_INDEX             0
+#define flentiodID_INDEX             ( flentiodMODE_INDEX + sizeof(flbyt_t)              )
+#define flentiodDATA_INDEX           ( flentiodID_INDEX + sizeof(flentdid_t)             )
+#define flentiodPD_SIZE_INDEX          flentiodDATA_INDEX
+#define flentiodPD_PTR_INDEX         ( flentiodPD_SIZE_INDEX + sizeof(flint_t)           )
+#define flentiodPD_DONECB_INDEX      ( flentiodPD_PTR_INDEX + sizeof(void*)                 )
+#define flentiodPD_DONECB_ARGS_INDEX ( flentiodPD_DONECB_INDEX + sizeof(flvod_tf)  )
 
-#define flentiodGetBuffer(iod)      ( (flbyt_t*)((iod)->data)                        )
-#define flentiodGetBufferSize(iod)  ( iod->length                                    )
-#define flentiodGetModeLoc(iod)     ( flentiodGetBuffer(iod) + flentiodMODE_INDEX    )
-#define flentiodGetIDloc(iod)       ( flentiodGetBuffer(iod) + flentiodID_INDEX      )
-#define flentiodGetDataLoc(iod)     ( flentiodGetBuffer(iod) + flentiodDATA_INDEX    )
+#define flentiodGetBuffer(iod)           ( (flbyt_t*)((iod)->data)                        )
+#define flentiodGetBufferSize(iod)       ( iod->length                                    )
+#define flentiodGetModeLoc(iod)          ( flentiodGetBuffer(iod) + flentiodMODE_INDEX    )
+#define flentiodGetIDloc(iod)            ( flentiodGetBuffer(iod) + flentiodID_INDEX      )
+#define flentiodGetDataLoc(iod)          ( flentiodGetBuffer(iod) + flentiodDATA_INDEX    )
+#define flentiodGetPdSizeLoc(iod)          flentiodGetDataLoc(iod)
+#define flentiodGetPdPtrLoc(iod)         ( flentiodGetBuffer(iod) + flentiodPD_PTR_INDEX     )
+#define flentiodGetPdDonecbLoc(iod)      ( flentiodGetBuffer(iod) + flentiodPD_DONECB_INDEX  )
+#define flentiodGetPdDonecbArgLoc(iod)   ( flentiodGetBuffer(iod) + flentiodPD_DONECB_ARGS_INDEX   )
 
-#define flentiodMode(iod)     (  *flentiodGetModeLoc(iod)                            )
-#define flentiodID(iod)       (  *( (flentdid_t*)flentiodGetIDloc(iod) )             )
-#define flentiodData(iod)        flentiodGetDataLoc(iod)
-#define flentiodSize(iod)     (  (iod)->length - flentiodDATA_INDEX                  )
+#define flentiodMode(iod)          (  *flentiodGetModeLoc(iod)                            )
+#define flentiodID(iod)            (  *( (flentdid_t*)flentiodGetIDloc(iod) )             )
+#define flentiodData(iod)             flentiodGetDataLoc(iod)
+#define flentiodSize(iod)          (  (iod)->length - flentiodDATA_INDEX                  )
+#define flentiodPdSize(iod)        (  *( (flint_t*)flentiodGetPdSizeLoc(iod) )            )
+#define flentiodPdPtr(iod)         (  *( (void**)flentiodGetPdPtrLoc(iod) )                 )
+#define flentiodPdDonecb(iod)      (  *( (flvod_tf*)flentiodGetPdDonecbLoc(iod) )  )
+#define flentiodPdDonecbArgs(iod)     flentiodGetPdDonecbArgLoc(iod)
 
 #define flentiodAppend(iod, dataPtr, dataSize) flarrPushs( iod, dataPtr, dataSize )
 
 #define flentiodPutMode(iod, mode)              ( flentiodMode(iod) = mode               )
 #define flentiodPutID(iod, dataId)              ( flentiodID(iod) = dataId               )
 #define flentiodPutData(iod, dataPtr, dataSize) ( flarrSetLength(iod, flentiodDATA_INDEX)? flentiodAppend(iod, dataPtr, dataSize) : NULL )
+#define flentiodPutPdSize(iod, postdpSize)      ( flentiodPdSize(iod) = postdpSize  )
+#define flentiodPutPdPtr(iod, dataPtr)          ( flentiodPdPtr(iod) = dataPtr             )
+#define flentiodPutPdDoneCb(iod, doneCb)        ( flentiodPdDonecb(iod) = doneCb           )
+#define flentiodPutPdDoneCbArgs(iod, adPtr, adSize) ( flarrSetLength(iod, flentiodPD_DONECB_ARGS_INDEX)? flentiodAppend(iod, adPtr, adSize) : NULL )
 
 #define flentiodClear(iod, dataMode) ( flarrSetLength(iod, flentiodDATA_INDEX)? flentiodPutMode(iod, dataMode) : flentdmoNIL )
 
@@ -58,6 +78,20 @@ typedef flArray flentIOdata;
  * @param dataSize 
  */
 void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, const void* dataPtr, flint_t dataSize);
+
+/**
+ * @brief  Write the given arguments into $iod
+ * 
+ * @param iod 
+ * @param id The id of the data
+ * @param dataPtr The pointer to be written to $iod
+ * @param dataSize The size in bytes of the data pointer to by($dataPtr)
+ * @param cb A function to be call when the user of the given data pointer($dataPtr) is
+ * done with it.
+ * @param cbArgPtr A pointer to data to be given to the callback as argument
+ * @param cbArgSize The size in bytes of the data pointer to by $cbArgPtr
+ */
+void flentiodPdPuts(flentIOdata* iod, flentdid_t id, void* dataPtr, flint_t dataSize, flvod_tf cb, void* cbArgPtr, flint_t cbArgSize);
 
 #define flentiodCopy(destIOD, srcIOD) flarrPuts(destIOD, 0, srcIOD->data, srcIOD->length)
 
@@ -255,13 +289,26 @@ void flentxevRemoveEntity(flentXenv* xenv, flEntity* ent);
 struct flentIOport{
 /**
  * @brief 
- * This is an array of bytes for storing output of a port
  * @see $flentIOdata for interpretation
  * @note if this pointer is NULL, this port is an input only port and as such any attempt to
  * write to it will result in error(most likely segmentation fault)
  */
   flentIOdata * const _obuf;
   #define _flentiopSetObuf(iop, obuf) *( (flentIOdata**)(&(iop)->_obuf) ) = obuf
+
+  /**
+   * @brief Whether the current output of this port has been processed by it's linked port.
+   * This flag is on(true) by default; a linked port's entity can disable this flag to let
+   * the entity associated with this port knows that it's still processing the lastest output
+   * before this flag was disabled and hence it's currently not watching this port's output.
+   */
+  const bool outputProcessed;
+  #define _flentiopSetOutputProcessed(iop, bval) *( (bool*)&(iop)->outputProcessed ) = bval
+  
+  #define flentiopSetInputProcessed(iop, bval) do{\
+    if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
+    if(iop->_linkedPort) _flentiopSetOutputProcessed(iop->_linkedPort, bval);\
+  }while(0)
 
   flEntity * const entity;
   #define flentiopSetEntity(iop, ent) *( (flEntity**)(&(iop)->entity) ) = ent
@@ -330,16 +377,33 @@ flentIOport* flentiopUnlink(flentIOport* iop);
 #define flentiopGetInputSize(iop)     (  flentiodSize(iop->_linkedPort->_obuf)    )
 #define flentiopSz(iop)                  flentiopGetInputSize(iop)
 
+#define flentiopGetInputPdSize(iop)   (  flentiodPdSize(iop->_linkedPort->_obuf)    )
+#define flentiopPdSz(iop)                flentiopGetInputPdSize(iop)
+
+#define flentiopGetInputPdPtr(iop)    (  flentiodPdPtr(iop->_linkedPort->_obuf)    )
+#define flentiopPtr(iop)                 flentiopGetInputPdPtr(iop)
+
+#define flentiopGetInputPdDonecb(iop) (  flentiodPdDonecb(iop->_linkedPort->_obuf)    )
+#define flentiopCb(iop)                  flentiopGetInputPdDonecb(iop)
+
+#define flentiopGetInputPdDonecbArgs(iop) (  flentiodPdDonecbArgs(iop->_linkedPort->_obuf)    )
+#define flentiopArg(iop)                 flentiopGetInputPdDonecbArgs(iop)
+
 //Micros for writing data to the output of a given port
 #define flentiopPuts(iop, mode, id, dataPtr, dataSize) do{\
     if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
     flentiodPuts(iop->_obuf, mode, id, dataPtr, dataSize);\
-}while(0);
+}while(0)
+
+#define flentiopPdPuts(iop, id, dataPtr, dataSize, cb, cbArgPtr, cbArgSize) do{\
+    if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
+    flentiodPdPuts(iop->_obuf, id, dataPtr, dataSize, cb, cbArgPtr, cbArgSize);\
+}while(0)
 
 #define flentiopClear(iop, dataMode) do{\
     if(iop->_linkedPort && iop->_linkedPort->entity) flentEnableTick(iop->_linkedPort->entity);\
     flentiodClear(iop->_obuf, dataMode);\
-}while(0);
+}while(0)
            
 #define flentiopAppend(iop, dataPtr, dataSize)  flentiodAppend(iop->_obuf, dataPtr, dataSize)
 
@@ -355,6 +419,18 @@ flentIOport* flentiopUnlink(flentIOport* iop);
 
 #define flentiopGetOutputSize(iop)     (  flentiodSize(iop->_obuf)    )
 #define flentiopOsz(iop)                  flentiopGetOutputSize(iop)
+
+#define flentiopGetOutputPdSize(iop)   (  flentiodPdSize(iop->_obuf)    )
+#define flentiopOdpSz(iop)                flentiopGetOutputPdSize(iop)
+
+#define flentiopGetOutputPdPtr(iop)    (  flentiodPdPtr(iop->_obuf)    )
+#define flentiopOptr(iop)                flentiopGetOutputPdPtr(iop)
+
+#define flentiopGetOutputPdDonecb(iop) (  flentiodPdDonecb(iop->_obuf)    )
+#define flentiopOcb(iop)                  flentiopGetOutputPdDonecb(iop)
+
+#define flentiopGetOutputPdDonecbArgs(iop) (  flentiodPdDonecbArgs(iop->_obuf)    )
+#define flentiopOarg(iop)                 flentiopGetOutputPdDonecbArgs(iop)
 
 
 #endif//FLENTITYHEADERH_INCLUDED

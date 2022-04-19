@@ -11,6 +11,16 @@ void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, const void* 
     flentiodPutData(iod, dataPtr, dataSize);
 }
 
+void flentiodPdPuts(flentIOdata* iod, flentdid_t id, void* dataPtr, flint_t dataSize, flvod_tf cb, void* cbArgPtr, flint_t cbArgSize){
+    flarrSetLength(iod, flentiodPD_DONECB_ARGS_INDEX);
+    flentiodPutMode(iod, flentdmoPOSTDP);
+    flentiodPutID(iod, id);
+    flentiodPutPdPtr(iod, dataPtr);
+    flentiodPutPdSize(iod, dataSize);
+    flentiodPutPdDoneCb(iod, cb);
+    flentiodPutPdDoneCbArgs(iod, cbArgPtr, cbArgSize);
+}
+
 /*----------flentIOport functions----------*/
 
 flentIOport* flentiopNew(flentipn_t ipname, flentIOport* targetPort, bool hasOutputBuffer){
@@ -27,6 +37,7 @@ flentIOport* flentiopNew(flentipn_t ipname, flentIOport* targetPort, bool hasOut
     }
 
     _flentiopSetObuf(iop, outputBuf);
+    _flentiopSetOutputProcessed(iop, true);
 
     flentiopSetName(iop, ipname);
     flentiopSetEntity(iop, NULL);
