@@ -18,6 +18,30 @@ static bool runPortReadAndWriteTest(){
     return status;
 }
 
+static bool runPdPortReadAndWriteTest(){
+    flentIOport* ioPort = flentiopNewIOport(flentipn1, NULL);
+
+    int inum = 27;
+    flvod_tf _cb = NULL;
+    int _cbArg = 12;
+
+    flentiopPdPuts(ioPort, flentdidDATA, &inum, sizeof(inum), _cb, &_cbArg, sizeof(_cbArg));
+
+    flentdmo_t mode = flentiopGetOutputMode(ioPort);
+    flentdid_t id = flentiopGetOutputID(ioPort);
+    int data = *(int*)flentiopGetOutputPdPtr(ioPort);
+    int dataSize = flentiopGetOutputPdSize(ioPort);
+    flvod_tf cb = flentiopGetOutputPdDonecb(ioPort);
+    int cbArg = *(int*)flentiopGetOutputPdDonecbArgs(ioPort);
+    
+    bool status = (mode == flentdmoPOSTDP && id == flentdidDATA && data == inum && dataSize == sizeof(inum)
+                  && cb == _cb && cbArg == _cbArg);
+    
+    flentiopFree(ioPort);
+
+    return status;
+}
+
 /*-----TEST ENTITY:strAdderEnt-----*/
 typedef struct _strAdderEnt _strAdderEnt;
 
@@ -106,8 +130,12 @@ bool _flentRunTests(){
         flerrHandle("\nTESf _flentRunTests: Test Failed !1(runPortReadAndWriteTest)");
     }
 
+    if(!runPdPortReadAndWriteTest()){
+        flerrHandle("\nTESf _flentRunTests: Test Failed !2(runPdPortReadAndWriteTest)");
+    }
+
     if(!runStrAdderTest()){
-        flerrHandle("\nTESf _flentRunTests: Test Failed !2(runStrAdderTest)");
+        flerrHandle("\nTESf _flentRunTests: Test Failed !3(runStrAdderTest)");
     }
 
     return true;
