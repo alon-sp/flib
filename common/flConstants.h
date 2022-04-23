@@ -54,7 +54,7 @@ typedef int8_t flentsyc_t;
 
 //This command is sent whenever an entity is about to be destroyed.
 //An entity on receving this command must perform cleanup operation on custom props as required.
-///@arg void
+///@arg flEntity* : Pointer to the entity to the target entity
 #define flentsycCLEANUP                    1
 
 //This command is a notification that is sent whenever a new port is about to be

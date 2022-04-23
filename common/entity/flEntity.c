@@ -11,14 +11,16 @@ void flentiodPuts(flentIOdata* iod, flentdmo_t mode, flentdid_t id, const void* 
     flentiodPutData(iod, dataPtr, dataSize);
 }
 
-void flentiodPdPuts(flentIOdata* iod, flentdid_t id, void* dataPtr, flint_t dataSize, flvod_tf cb, void* cbArgPtr, flint_t cbArgSize){
-    flarrSetLength(iod, flentiodPD_DONECB_ARGS_INDEX);
+void flentiodPdPuts(flentIOdata* iod, flentdid_t id, const void* dataPtr, flint_t dataSize, flvod_tf cb, const void* cbArgPtr){
+    if(iod->length != flentiodPD_DATA_BUFFER_MIN_SIZE) flarrSetLength(iod, flentiodPD_DATA_BUFFER_MIN_SIZE);
+    
     flentiodPutMode(iod, flentdmoPOSTDP);
     flentiodPutID(iod, id);
     flentiodPutPdPtr(iod, dataPtr);
     flentiodPutPdSize(iod, dataSize);
     flentiodPutPdDoneCb(iod, cb);
-    flentiodPutPdDoneCbArgs(iod, cbArgPtr, cbArgSize);
+    flentiodPutPdDoneCbArg(iod, cbArgPtr);
+
 }
 
 /*----------flentIOport functions----------*/
@@ -231,6 +233,8 @@ void flentForEachPort(flEntity* ent, flentForEachPortCb_tf cb, void* cbArgs){
     }
 }
 
+#undef _flentInitializeIOports
+
 /*----------flentXenv functions---------*/
 
 flentXenv* flentxevNew(flint_t initialEntityCount){
@@ -316,16 +320,16 @@ void flentxevRemoveEntity(flentXenv* xenv, flEntity* ent){
 
 #define _dtpGetProps(ent) ((flArray*)(ent)->props)
 
-void* flentstdDataToPtrDonecb(void* args){
-    flarrSetLength( (flArray*)_dtpGetProps((flEntity*)args), 0);
-    flentiopSetInputProcessed(flentGetPort((flEntity*)args, 0), true);
+static void* flentstdDataToPtrDonecb(void* args){
+    flarrSetLength(_dtpGetProps((flEntity*)args), 0);
+    flentiopSetInputProcessed(_flentGetPort((flEntity*)args, 0), true);
     return NULL;
 }
 
 static void flentstdDataToPtrTick(flEntity* ent, flentXenv* xenv){
-    flentIOport* dataPort = flentGetPort(ent, 0);
-    flentIOport* ptrPort = flentGetPort(ent, 1);
-    flArray* ep = _flentDtpGetProps(ent);
+    flentIOport* dataPort = _flentGetPort(ent, 0);
+    flentIOport* ptrPort = _flentGetPort(ent, 1);
+    flArray* ep = _dtpGetProps(ent);
 
     if(flentiopMo(ptrPort) != flentdmoNIL || 
         (flentiopMo(ptrPort) == flentdmoNIL && flentiopOmo(dataPort) != flentdmoNIL)  ){
@@ -337,18 +341,18 @@ static void flentstdDataToPtrTick(flEntity* ent, flentXenv* xenv){
         return;
     }
 
-    if(flentiopMo(dataPort) != flentdmoPOSTDP){
+    if(flentiopMo(dataPort) == flentdmoPOSTDP){
+        flentiopCopyInput(ptrPort, dataPort);
+    }else{
         if(!ep){
-            ep = flarrNew(flentiopPdSz(dataPort), sizeof(flbyt_t));
+            ep = flarrNew(flentiopSz(dataPort), sizeof(flbyt_t));
             flentSetProps(ent, ep);
         }
-        flarrPuts(ep, 0, flentiopPtr(dataPort), flentiopPdSz(dataPort));
+        flarrPushs(ep, flentiopDt(dataPort), flentiopSz(dataPort));
         flentiopPdPuts(ptrPort, flentiopID(dataPort), 
             flarrGet(ep, 0), ep->length, 
-            flentstdDataToPtrDonecb, ent, sizeof(ent)  );
+            flentstdDataToPtrDonecb, ent );
         flentiopSetInputProcessed(dataPort, false);
-    }else{
-        flentiopCopyInput(ptrPort, dataPort);
     }
 
 }
@@ -375,6 +379,3 @@ flEntity* flentstdDataToPtrNew(flentXenv* xenv){
 }
 
 #undef _dtpGetProps
-
-
-#undef _flentInitializeIOports

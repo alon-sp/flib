@@ -25,14 +25,14 @@ static bool runPdPortReadAndWriteTest(){
     flvod_tf _cb = NULL;
     int _cbArg = 12;
 
-    flentiopPdPuts(ioPort, flentdidDATA, &inum, sizeof(inum), _cb, &_cbArg, sizeof(_cbArg));
+    flentiopPdPuts(ioPort, flentdidDATA, &inum, sizeof(inum), _cb, &_cbArg);
 
     flentdmo_t mode = flentiopGetOutputMode(ioPort);
     flentdid_t id = flentiopGetOutputID(ioPort);
     int data = *(int*)flentiopGetOutputPdPtr(ioPort);
     int dataSize = flentiopGetOutputPdSize(ioPort);
     flvod_tf cb = flentiopGetOutputPdDonecb(ioPort);
-    int cbArg = *(int*)flentiopGetOutputPdDonecbArgs(ioPort);
+    int cbArg = *(int*)flentiopGetOutputPdDonecbArg(ioPort);
     
     bool status = (mode == flentdmoPOSTDP && id == flentdidDATA && data == inum && dataSize == sizeof(inum)
                   && cb == _cb && cbArg == _cbArg);
@@ -124,18 +124,67 @@ static bool runStrAdderTest(){
     return status;
 }
 
+static bool runStdDataToPtrTest(){
+    flentXenv* xenv = flentxevNew(1);
+    flEntity* dtpEnt = flentstdDataToPtrNew(xenv);
+    flentxevAddEntity(xenv, dtpEnt);
+
+    flentIOport* dataInIOP = flentiopNewIOport(flentipn1, flentFindPortByName(dtpEnt, flentipnDATA));
+    flentIOport* ptrInIOP = flentiopNewIOport(flentipn2, flentFindPortByName(dtpEnt, flentipnPTR));
+
+    //Data forward test
+    const char* hstr = "Hello";
+    flentiopPuts(dataInIOP, flentdmoPOST, flentdidSTRING, hstr, strlen(hstr)+1);
+
+    flentxevTick(xenv, 0, 0);
+
+    bool fwdTestStatus = flentiopMo(ptrInIOP) == flentdmoPOSTDP &&
+                         flentiopID(ptrInIOP) == flentdidSTRING &&
+                         strcmp((const char*)flentiopPtr(ptrInIOP), hstr) == 0 &&
+                         (flEntity*)flentiopArg(ptrInIOP) == dtpEnt && !dataInIOP->outputProcessed;
+    flentiopCb(ptrInIOP)(flentiopArg(ptrInIOP));
+    fwdTestStatus = fwdTestStatus && dataInIOP->outputProcessed;
+
+    //Data reversed forward test
+    flentiopPuts(ptrInIOP, flentdmoPOST, flentdidSTRING, hstr, strlen(hstr)+1);
+
+    flentxevTick(xenv, 0, 0);
+
+    bool rfwdTestStatus = flentiopMo(dataInIOP) == flentdmoPOST &&
+                          flentiopID(dataInIOP) == flentdidSTRING &&
+                          strcmp((const char*)flentiopDt(dataInIOP), hstr) == 0 &&
+                          flentiopSz(dataInIOP) == strlen(hstr)+1;
+
+    flentxevFree(xenv , true);
+    
+    return fwdTestStatus && rfwdTestStatus;
+    
+}
+
 bool _flentRunTests(){
 
-    if(!runPortReadAndWriteTest()){
+    if(runPortReadAndWriteTest()){
+        printf("\n_runPortReadAndWriteTest: TEST OK");
+    }else{
         flerrHandle("\nTESf _flentRunTests: Test Failed !1(runPortReadAndWriteTest)");
     }
 
-    if(!runPdPortReadAndWriteTest()){
+    if(runPdPortReadAndWriteTest()){
+        printf("\n_runPdPortReadAndWriteTest: TEST OK");
+    }else{
         flerrHandle("\nTESf _flentRunTests: Test Failed !2(runPdPortReadAndWriteTest)");
     }
 
-    if(!runStrAdderTest()){
+    if(runStrAdderTest()){
+        printf("\n_runStrAdderTest: TEST OK");
+    }else{
         flerrHandle("\nTESf _flentRunTests: Test Failed !3(runStrAdderTest)");
+    }
+
+    if(runStdDataToPtrTest()){
+        printf("\n_runStdDataToPtrTest: TEST OK");
+    }else{
+        flerrHandle("\nTESf _flentRunTests: Test Failed !4(runStdDataToPtrTest)");
     }
 
     return true;

@@ -194,7 +194,7 @@ void* flarrPuts(flArray* flarr, flint_t index, const void* dataBytesPtr, flint_t
     if(index < 0) index = 0;
 
     if(index >= flarr->length){
-        flerrHandle("\nIOB flarrPut !1");
+        flerrHandle("\nIOB flarrPuts !1");
         return NULL;
     }
 
