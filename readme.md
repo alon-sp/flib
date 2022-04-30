@@ -1,6 +1,5 @@
 # Funcbro Library (flib)
 
-Flib is intended to be a portable c-based library that contain common utitlity functions
-and logic entities/components that can be used across multiple projects.
+Flib is a Flow Based Programming (FBP) inspired and portable C library for interactive application.
 
 This library is currently under active development.
