@@ -1,14 +1,18 @@
 #ifndef FLARRAYHEADERH_INCLUDED
 #define FLARRAYHEADERH_INCLUDED
 
-#include"../flConstants.h"
+#include"flConstants.h"
+#include"flTypes.h"
 #include<string.h>
+#include<stdarg.h>
 
 /**
  * @brief A simple dynamic array container
  */
 typedef struct{
     const flint_t length;//The current number of elements in the array
+    #define _flarrSetLength(arr, _length) *( (flint_t*)(&arr->length) ) = _length
+
     const flint_t capacity;//The number of elements this array can hold without resizing it's buffer
     const flint_t elemSize;//Size in bytes per element of $.data
     void* const data;
@@ -195,9 +199,21 @@ void* flarrPuts(flArray* flarr, flint_t index, const void* dataBytesPtr, flint_t
  * the NULL character.
  * @param chArr 
  * @param strv 
- * @return pointer to the resulting c-string | NULL if error(memory related) occur
+ * @return pointer to the entire c-string | NULL if error(memory related) occur
  */
 const char* flarrstrPush(flArray* chArr, const char* strv);
+
+/**
+ * @brief Assume $chArr is a character array and append $argc c-string to this array
+ * beginning at $chArr->length.
+ * After this operation $chArr->length is updated such that $chArr[$chArr->length] equals
+ * the NULL character.
+ * @param chArr 
+ * @param argc Total number of c-string passed to this function 
+ * @param ... 
+ * @return  pointer to the entire c-string | NULL if error(memory related) occur
+ */
+const char* flarrstrPushs(flArray* chArr, int argc, ...);
 
 /**
  * @brief 

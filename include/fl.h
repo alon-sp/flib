@@ -3,11 +3,11 @@
 
 #include<stdlib.h>
 
-#include"common/flConstants.h"
-#include"common/util/flUtil.h"
-#include"common/flError.h"
-#include"common/container/flArray.h"
-#include"common/entity/flEntity.h"
+#include"flConstants.h"
+#include"flUtil.h"
+#include"flError.h"
+#include"flArray.h"
+#include"flEntity.h"
 
 void* flmemMalloc(flint_t nbytes);
 

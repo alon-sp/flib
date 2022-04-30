@@ -2,6 +2,10 @@
     "files.associations": {
         "fl.h": "c",
         "flconstants.h": "c",
-        "_flentity.h": "c"
+        "_flentity.h": "c",
+        "flentxenv.h": "c",
+        "flentity.h": "c",
+        "flerror.h": "c",
+        "flentioport.h": "c"
     }
 }

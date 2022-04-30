@@ -2,10 +2,6 @@
 #include"fl.h"
 #include"flArray.h"
 
-inline static void _flarrSetLength(flArray* arr, flint_t _length){
-    *( (flint_t*)(&arr->length) ) = _length;
-}
-
 inline static void _flarrSetCapacity(flArray* arr, flint_t _capacity){
     *( (flint_t*)(&arr->capacity) ) = _capacity;
 }
@@ -215,6 +211,18 @@ const char* flarrstrPush(flArray* chArr, const char* strv){
     _flarrSetLength(chArr, chArr->length-1);/*exclude the null character*/
 
     return _flarrstrCstr(chArr);
+}
+
+const char* flarrstrPushs(flArray* chArr, int argc, ...){
+    va_list ptr;
+    va_start(ptr, argc);
+    for(int i = 0; i<argc; i++){
+        const char* str = va_arg(ptr, const char*);
+        flarrPushs(chArr, str, strlen(str));
+    }
+    va_end(ptr);
+
+    return flarrstrPush(chArr, "");
 }
 
 char flarrstrPop(flArray* chArr){

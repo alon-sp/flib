@@ -7,8 +7,17 @@ set(CMAKE_C_STANDARD_REQUIRED true)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS})
+
 add_subdirectory( "${PROJECT_SOURCE_DIR}/_test/" )
 
-include_directories( ${PROJECT_SOURCE_DIR} )
+include_directories( "${PROJECT_SOURCE_DIR}/include" )
 
-add_library(flib fl.c ./common/flError.c ./common/container/flArray.c ./common/entity/flEntity.c)
+add_library(flib 
+    ./include/fl.c ./include/flError.c 
+    ./include/flArray.c ./include/flEntity.c
+    ./include/flentIOport.c
+    ./include/flentXenv.c
+)
+target_link_libraries(flib ${SDL2_LIBRARIES})

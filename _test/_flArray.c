@@ -108,6 +108,22 @@ static bool _flarrstrTestPush(){
     return true;
 }
 
+static bool _flarrstrTestPushs(){
+    flArray* str = flarrNew(3, sizeof(char));
+
+    if(strcmp(
+        flarrstrPushs(str, 4,  "Hello", " world", " from", " flarrstr"), 
+                               "Hello world from flarrstr") != 0 ){
+        flerrHandle("\nTESf _flarrstrTestPush: Test Failed !1");
+    }
+
+    flarrFree(str);
+
+    printf("\n_flarrstrTestPushs: TEST OK");
+
+    return true;
+}
+
 static bool _flarrstrTestPop(){
     flArray* str = flarrNew(5, sizeof(char));
     flarrstrPush(str, "olleH");
@@ -234,6 +250,7 @@ bool _flarrRunTests(){
     _flarrTestSetLength();
     _flarrTestPut();
     _flarrstrTestPush();
+    _flarrstrTestPushs();
     _flarrstrTestPop();
     _flarrTestPushs();
     _flarrTestGets();
