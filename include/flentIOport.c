@@ -8,7 +8,7 @@ flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type){
     flArray* obuf = NULL;
 
     if(type != flentiopTYPE_INPUT){
-        obuf = flarrNew(_flentiopOBUF_PRE_DATA_META_SIZE+sizeof(void*)*2, sizeof(flbyt_t)); 
+        obuf = flarrNew(_flentiopOBUF_PRE_DATA_META_SIZE+sizeof(void*), sizeof(flbyt_t)); 
     }
 
     _flentiopSetObuf(iop, obuf);
@@ -154,47 +154,54 @@ void flentiopClear(flentIOport* port){
     _flentiopObufSetDataType(port, flentiopDTYPE_NIL);
 }
 
+void flentiopSetIsBusy(flentIOport* port, bool bval){
+    if(port->type == flentiopTYPE_OUTPUT){
+        flentiopHandleInvalidOperation(port, "flentiopSetIsBusy", "output");
+    }
+    _flentiopSetIsBusy(port, bval);
+    if( port->_linkedPort){
+        _flentiopSetIsBusy(port->_linkedPort, bval);
+        if(port->_linkedPort->entity) _flentEnableTick(port->_linkedPort->entity);
+    }
+}
+
 //--Functions and micros for reading from port--
 //----------------------------------------------
 
+#define _flentiopPerformDefaultPreReadChecks(port, operNameStr, returnVal)\
+    if(port->isBusy || port->type == flentiopTYPE_OUTPUT){\
+        const char* adjstr = port->isBusy? "busy" : "output";\
+        flentiopHandleInvalidOperation(port, FLSTR(operNameStr), FLSTR(adjstr));\
+        return returnVal;\
+    }
 
 void* flentiopGetBuf(flentIOport* port){
-    if(port->type == flentiopTYPE_OUTPUT){
-        flentiopHandleInvalidOperation(port, FLSTR("flentiopGetBuf"), FLSTR("output"));
-        return NULL;
-    }
+    _flentiopPerformDefaultPreReadChecks(port, "flentiopGetBuf", NULL)
+
     return port->_linkedPort? _flentiopObufGetBufptr(port->_linkedPort) : NULL;
 }
 
 size_t flentiopGetBufSize(flentIOport* port){
-    if(port->type == flentiopTYPE_OUTPUT){
-        flentiopHandleInvalidOperation(port, FLSTR("flentiopGetBufSize"), FLSTR("output"));
-        return 0;
-    }
+    _flentiopPerformDefaultPreReadChecks(port, "flentiopGetBufSize", 0)
+
     return port->_linkedPort? _flentiopObufGetBufSize(port->_linkedPort) : 0;
 }
 
 flentiopDtype_t flentiopGetDataType(flentIOport* port){
-    if(port->type == flentiopTYPE_OUTPUT){
-        flentiopHandleInvalidOperation(port, FLSTR("flentiopGetDataType"), FLSTR("output"));
-        return flentiopDTYPE_NIL;
-    }
+    _flentiopPerformDefaultPreReadChecks(port, "flentiopGetDataType", flentiopDTYPE_NIL)
+
     return port->_linkedPort? _flentiopObufGetDataType(port->_linkedPort) : flentiopDTYPE_NIL;
 }
 
 void* flentiopGetData(flentIOport* port){
-    if(port->type == flentiopTYPE_OUTPUT){
-        flentiopHandleInvalidOperation(port, FLSTR("flentiopGetData"), FLSTR("output"));
-        return NULL;
-    }
+    _flentiopPerformDefaultPreReadChecks(port, "flentiopGetData", NULL)
+
     return port->_linkedPort? _flentiopObufGetData(port->_linkedPort) : NULL; 
 }
 
 size_t flentiopGetDataSize(flentIOport* port){
-    if(port->type == flentiopTYPE_OUTPUT){
-        flentiopHandleInvalidOperation(port, FLSTR("flentiopGetDataSize"), FLSTR("output"));
-        return 0;
-    }
+    _flentiopPerformDefaultPreReadChecks(port, "flentiopGetDataSize", 0)
+
     return port->_linkedPort? _flentiopObufGetDataSize(port->_linkedPort) : 0;
 }
 

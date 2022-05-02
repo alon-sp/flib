@@ -23,8 +23,13 @@ typedef int8_t flentiopDTC_t;
 typedef int32_t flentiopDlsp_t;
 typedef struct{
     void* data;
-    size_t size;
-    flentiopDlsp_t* const _lspPtr;
+    size_t dataSize;
+
+    void * const buf_;
+    const size_t bufSize_;
+
+    flentiopDlsp_t* const _lsp;
+    const bool _lspIsFrozen;
     
     #define flentiopDptrSetLspPtr(dptr, lspPtr)\
         *(flentiopDlsp_t**)(&(dptr)._lspPtr) = (flentiopDlsp_t*)lspPtr

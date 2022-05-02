@@ -42,7 +42,7 @@ struct flentIOport{
   #define _flentiopSetObuf(iop, obuf) *( (flArray**)(&(iop)->_obuf) ) = obuf
 
   //If this is an INPUT port and this flag is true => this port is currently not accepting input
-  //On the other hand if it's an OUTPUT or IO port => this port is not available for writing and
+  //On the other hand if it's an OUTPUT port => this port is not available for writing and
   //as such any write operation will result in error.
   const bool isBusy;
   #define _flentiopSetIsBusy(iop, bval) *( (bool*)(&(iop)->isBusy) ) = bval
@@ -123,6 +123,13 @@ void flentiopPutb(flentIOport* port, const void* bytesPtr, size_t bytesSize);
  * @param port 
  */
 void flentiopClear(flentIOport* port);
+
+/**
+ * @brief Set the busy status of the given port to the given boolean value.
+ * @param port 
+ * @param bval 
+ */
+void flentiopSetIsBusy(flentIOport* port, bool bval);
 
 //--Functions and micros for reading from port--
 //----------------------------------------------

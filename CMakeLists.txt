@@ -19,5 +19,6 @@ add_library(flib
     ./include/flArray.c ./include/flEntity.c
     ./include/flentIOport.c
     ./include/flentXenv.c
+    ./include/flentstd.c
 )
 target_link_libraries(flib ${SDL2_LIBRARIES})
