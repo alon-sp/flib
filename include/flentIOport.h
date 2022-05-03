@@ -42,8 +42,8 @@ struct flentIOport{
   #define _flentiopSetObuf(iop, obuf) *( (flArray**)(&(iop)->_obuf) ) = obuf
 
   //If this is an INPUT port and this flag is true => this port is currently not accepting input
-  //On the other hand if it's an OUTPUT port => this port is not available for writing and
-  //as such any write operation will result in error.
+  //On the other hand if it's an OUTPUT port => this port is not available for writing.
+  //Any write or read operation on any such port will result in error
   const bool isBusy;
   #define _flentiopSetIsBusy(iop, bval) *( (bool*)(&(iop)->isBusy) ) = bval
 
@@ -76,10 +76,13 @@ struct flentIOport{
 /**
  * @brief Create a new port
  * @param id The id of this port
- * @param type The type of port to create:(flentiopTYPE_INPUT, flentiopTYPE_OUTPUT, flentiopTYPE_IO)
+ * @param type The type of port to create:(flentiopTYPE_INPUT, flentiopTYPE_OUTPUT)
+ * @param dataTypeCount The total number of data types this port can support. A value of zero(0)
+ * implies this port can accept all data types whilst a negative value implies this port
+ * is for debuggin/testing purpose and as such it's compatible with all ports.
  * @return Pointer to the newly created port.
  */
-flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type);
+flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type, flentiopDTC_t dataTypeCount);
 
 /**
  * @brief unlink $iop and clean up the memory associated with it

@@ -5,6 +5,8 @@
 #include<stdbool.h>
 #include<stddef.h>
 
+#include"flTypes.h"
+
 typedef uint8_t flentiopDataType_t;
 typedef uint8_t flentiopDtype_t;
 
@@ -20,30 +22,36 @@ typedef int8_t flentiopDTC_t;
 #define flentiopDTYPE_JSON      206
 
 #define flentiopDTYPE_DPTR      207
-typedef int32_t flentiopDlsp_t;
-typedef struct{
+typedef struct flentiopDptr flentiopDptr;
+struct flentiopDptr{
     void* data;
     size_t dataSize;
 
-    void * const buf_;
-    const size_t bufSize_;
+    void * const _srcBuf;
+    const size_t _srcBufSize;
+    flEntity * const _srcEnt;
 
-    flentiopDlsp_t* const _lsp;
-    const bool _lspIsFrozen;
-    
-    #define flentiopDptrSetLspPtr(dptr, lspPtr)\
-        *(flentiopDlsp_t**)(&(dptr)._lspPtr) = (flentiopDlsp_t*)lspPtr
+    const int _lsp;
+    void (* const _donecb)(flentiopDptr* dp);
 
-    #define flentiopDptrSetLsp(dptr, lspVal) ( *(dptr)._lspPtr = lspVal )
+    #define _flentiopDptrSetLsp(dp, lsp) ( *(int*)( &(dp)->_lsp ) = lsp )
 
-    #define _flentiopDptrGetLsp(dptr) (*(dptr)._lspPtr)
+    #define _flentiopDptrIncLsp(dp) _flentiopDptrSetLsp(dp, (dp)->_lsp+1)
 
-    #define flentiopDptrIncLsp(dptr) flentiopDptrSetLsp(dptr, _flentiopDptrGetLsp(dptr)+1)
+    #define _flentiopDptrDecLsp(dp) _flentiopDptrSetLsp(dp, (dp)->_lsp-1)
 
-    #define flentiopDptrDecLsp(dptr) flentiopDptrSetLsp(dptr, _flentiopDptrGetLsp(dptr)-1)
+    #define _flentiopDptrInit(srcEnt, dataPtr, dataSize, donecb)\
+        {\
+            .data = dataPtr, .dataSize = dataSize,\
+            ._srcBuf = dataPtr, ._srcBufSize = dataSize,\
+            ._srcEnt = srcEnt, ._lsp = 0, ._donecb = donecb\
+        }
 
-    #define flentiopDptrInit(dataPtr, dataSize, lspPtr)\
-        {.data = dataPtr, .size = dataSize, ._lspPtr = (flentiopDlsp_t*)lspPtr}
-}flentiopDptr;
+    #define _flentiopDptrUpdate(dp, newDataPtr)\
+        do{\
+            (dp)->data = (void*)( (char*)(newDataPtr) + ((char*)(dp)->_srcBuf - (char*)(dp)->data) );\
+            *(void**)(&(dp)->_srcBuf) = (newDataPtr);\
+        }while(0)
+};
 
 #endif

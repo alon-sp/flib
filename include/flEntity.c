@@ -148,7 +148,7 @@ void _flentClearAllPortsObuf(flEntity* ent){
     for(int i = 0; i<ent->ioports->length; i++){
         flentIOport* port = *(flentIOport**)flarrGet(ent->ioports, i);
         if(_flentiopObufGetDataType(port) != flentiopDTYPE_NIL){
-             _flentiopObufSetDataType(port, flentiopDTYPE_NIL);
+            flentiopClear(port);
         }
     }   
 }

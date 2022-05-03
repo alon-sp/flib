@@ -2,7 +2,11 @@
 #include"fl.h"
 #include"flEntity.h"
 
-flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type){
+#define _flentiopClear(port)\
+    _flarrSetLength(port->_obuf, _flentiopOBUF_DTYPE_INDEX+sizeof(flentiopDtype_t));\
+    _flentiopObufSetDataType(port, flentiopDTYPE_NIL);
+
+flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type, flentiopDTC_t dataTypeCount){
     flentIOport* iop = flmemMalloc(sizeof(flentIOport));
 
     flArray* obuf = NULL;
@@ -14,14 +18,14 @@ flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type){
     _flentiopSetObuf(iop, obuf);
     if(obuf){
         //Write default output value
-        flentiopClear(iop);
+        _flentiopClear(iop);
     }
 
     _flentiopSetIsBusy(iop, false);
     flentiopSetEntity(iop, NULL);
     flentiopSetID(iop, id);
     _flentiopSetlinkedPort(iop, NULL);
-    flentiopSetDataTypeCount(iop, -1);
+    flentiopSetDataTypeCount(iop, dataTypeCount);
     flentiopSetType(iop, type);
     flentiopSetProps(iop, NULL);
 
@@ -124,16 +128,34 @@ static void flentiopHandleInvalidOperation(flentIOport* port, const char* operNa
 //--Functions and micros for writing to port--
 //--------------------------------------------
 
-#define _flentiopPerformDefaultPreWriteOps(iop, callerNameStr)\
-  if( (iop)->type == flentiopTYPE_INPUT || (iop)->isBusy){\
-      const char* adjStr = (iop)->isBusy? FLSTR("busy") : FLSTR("input");\
-      flentiopHandleInvalidOperation(iop, callerNameStr, adjStr);\
-      return;\
-  }\
-  if((iop)->_linkedPort && (iop)->_linkedPort->entity) _flentEnableTick((iop)->_linkedPort->entity)
+static bool _flentiopPerformDefaultPreWriteOps(flentIOport* iop, const char* callerNameStr, flentiopType_t newDataType, const void* newDataPtr){
+    if( iop->type == flentiopTYPE_INPUT || iop->isBusy){
+        const char* adjStr = iop->isBusy? FLSTR("busy") : FLSTR("input");
+        flentiopHandleInvalidOperation(iop, callerNameStr, adjStr);
+        return false;
+    }
+
+    if(iop->_linkedPort && iop->_linkedPort->entity) _flentEnableTick(iop->_linkedPort->entity);
+
+    if(newDataType == flentiopDTYPE_DPTR){
+        flentiopDptr* dptr = *(flentiopDptr**)newDataPtr;
+        _flentiopDptrIncLsp(dptr);
+    }
+
+    if(_flentiopObufGetDataType(iop) == flentiopDTYPE_DPTR){
+        flentiopDptr* dptr = *(flentiopDptr**)_flentiopObufGetData(iop);
+        _flentiopDptrDecLsp(dptr);
+        if(dptr->_lsp <= 0){
+            dptr->_donecb(dptr);
+        }
+    }
+    return true;
+}
+
+
 
 void flentiopPut(flentIOport* port, flentiopDtype_t dtype, const void* dataPtr, size_t dataSize){
-    _flentiopPerformDefaultPreWriteOps(port, FLSTR("flentiopPut"));
+    if( !_flentiopPerformDefaultPreWriteOps(port, FLSTR("flentiopPut"), dtype, dataPtr) ) return;
 
     _flarrSetLength(port->_obuf, _flentiopOBUF_DATA_INDEX+dataSize);
     _flentiopObufSetDataType(port, dtype);
@@ -141,23 +163,29 @@ void flentiopPut(flentIOport* port, flentiopDtype_t dtype, const void* dataPtr, 
 }
 
 void flentiopPutb(flentIOport* port, const void* bytesPtr, size_t bytesSize){
-    _flentiopPerformDefaultPreWriteOps(port, FLSTR("flentiopPutb"));
+    if( 
+        !_flentiopPerformDefaultPreWriteOps(port, FLSTR("flentiopPutb"), 
+        *(flentiopDtype_t*)bytesPtr, (char*)bytesPtr + sizeof(flentiopDtype_t)) ) return;
 
-    _flarrSetLength(port->_obuf, _flentiopOBUF_DATA_INDEX+bytesSize);
+    _flarrSetLength(port->_obuf, bytesSize);
     _flarrPuts(port->_obuf, 0, bytesPtr, bytesSize);
 }
 
 void flentiopClear(flentIOport* port){
-    _flentiopPerformDefaultPreWriteOps(port, FLSTR("flentiopClear"));
+    if( !_flentiopPerformDefaultPreWriteOps(port, FLSTR("flentiopClear"), flentiopDTYPE_NIL, NULL) ){
+        return;
+    }
 
-    _flarrSetLength(port->_obuf, _flentiopOBUF_DTYPE_INDEX+sizeof(flentiopDtype_t));
-    _flentiopObufSetDataType(port, flentiopDTYPE_NIL);
+    _flentiopClear(port);
 }
 
 void flentiopSetIsBusy(flentIOport* port, bool bval){
     if(port->type == flentiopTYPE_OUTPUT){
         flentiopHandleInvalidOperation(port, "flentiopSetIsBusy", "output");
     }
+
+    if(port->isBusy == bval) return;
+
     _flentiopSetIsBusy(port, bval);
     if( port->_linkedPort){
         _flentiopSetIsBusy(port->_linkedPort, bval);
@@ -205,5 +233,6 @@ size_t flentiopGetDataSize(flentIOport* port){
     return port->_linkedPort? _flentiopObufGetDataSize(port->_linkedPort) : 0;
 }
 
+#undef _flentiopClear
 #undef _flentiopIsComp
 #undef _flentiopPerformDefaultPreWriteOps
