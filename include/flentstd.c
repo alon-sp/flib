@@ -2,6 +2,8 @@
 #include"fl.h"
 #include"flentstd.h"
 
+/*----------BASIC ARITHMETIC OPERATORS----------*/
+//-----------------------------------------------
 static void  flentstdBAoperHscmd(flentsyc_t cmd, void *args, void* rvalDest){
     switch(cmd){
         case flentsycgetIOPORT_NAME:{
@@ -92,3 +94,42 @@ _flentstdBAoperDefineFuncs(Div, intOpA/intOpB, numOpA/numOpB)
 _flentstdBAoperDefineFuncs(Mod, intOpA%intOpB, (flnum_t)fmod(numOpA, numOpB))
 
 _flentstdBAoperDefineFuncs(Pow, (flint_t)pow(intOpA, intOpB), (flnum_t)pow(numOpA, numOpB))
+
+/*----------flentiopDTYPE_BYTS TO flentiopDTYPE_DPTR (BytsToDptr)----------*/
+//---------------------------------------------------------------------------
+typedef struct{
+    flArray* dptrs;
+    uint8_t dptrsMaxLen;
+    flArray* buf;
+}flentstdBytsToDptrProps;
+
+static void flentstdBytsToDptrTick(flEntity* ent, flentXenv* xenv){
+    flentIOport* input = flentFindPortByID(ent, flentstdBYTSTODPTR_IN, flentiopTYPE_INPUT);
+    flentIOport* output = flentFindPortByID(ent, flentstdBYTSTODPTR_OUT, flentiopTYPE_OUTPUT);
+    flentstdBytsToDptrProps* entProps = (flentstdBytsToDptrProps*)ent->props;
+
+    if(output->isBusy || entProps->dptrs->length >= entProps->dptrsMaxLen){
+        flentiopSetIsBusy(input, true);
+        return;
+    }else if(input->isBusy) flentiopSetIsBusy(input, false);
+
+    flentiopDtype_t inDtype = flentiopGetDataType(input);
+    if(inDtype == flentiopDTYPE_DPTR){
+        flentiopPutb(output, flentiopGetBuf(input), flentiopGetBufSize(input));
+    }else if(inDtype == flentiopDTYPE_BYTS){
+        if(!entProps->buf){
+            entProps->dptrs = flarrNew(entProps->dptrsMaxLen, sizeof(flentstdBytsToDptrProps));
+            entProps->buf = flarrNew(flentiopGetDataSize(input), sizeof(flbyt_t));
+        }
+
+        void* bufOldDataPtr = entProps->buf->data;
+        void* newDataLoc = flarrPushs(entProps->buf, flentiopGetData(input), flentiopGetDataSize(input));
+        void* bufNewDataPtr = entProps->buf->data;
+        if(bufOldDataPtr != bufNewDataPtr){
+            for(int i = 0; i<entProps->dptrs->length; i++){
+                flentiopDptr* dptr = (flentiopDptr*)flarrGet(entProps->dptrs, i);
+                _flentiopDptrUpdate(dptr, bufNewDataPtr);
+            }
+        }
+    }
+}
