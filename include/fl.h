@@ -8,6 +8,7 @@
 #include"flError.h"
 #include"flArray.h"
 #include"flEntity.h"
+#include"flentstd.h"
 
 void* flmemMalloc(flint_t nbytes);
 

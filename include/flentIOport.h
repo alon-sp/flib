@@ -57,8 +57,9 @@ struct flentIOport{
   #define _flentiopSetlinkedPort(iop, lport) *( (flentIOport**)(&(iop)->_linkedPort) ) = lport
 
   //The total number of data types this port can accept(is compatible with)
-  //A value of 0(zero) implies all data types and a value less 0 implies this port is
-  //a test/debug port and as such is assumed to be compatible with all other ports.
+  //A value of 0(zero) implies that this port accept all data types and emit no data type
+  //This value should be use for debugging/testing purposes only as it prevents proper
+  //compability checking.
   const flentiopDTC_t dataTypeCount;
   #define flentiopSetDataTypeCount(iop, dtc) *( (flentiopDTC_t*)(&(iop)->dataTypeCount) ) = dtc
 

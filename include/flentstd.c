@@ -1,39 +1,94 @@
 
+#include"fl.h"
 #include"flentstd.h"
 
-static void  flentstdOperPlusHscmd(flentsyc_t cmd, void *args, void* rvalDest){
+static void  flentstdBAoperHscmd(flentsyc_t cmd, void *args, void* rvalDest){
+    switch(cmd){
+        case flentsycgetIOPORT_NAME:{
+            flentIOport* port = (flentIOport*)args;
+            if(port->id == flentstdBINOPER_IN_A) *(char**)rvalDest = FLSTR("A");
+            else if(port->id == flentstdBINOPER_IN_B) *(char**)rvalDest = FLSTR("B");
+            else if(port->id == flentstdBINOPER_OUT) *(char**)rvalDest = FLSTR("OUT");
+        }
+        break;
 
-}
+        case flentsycgetENT_IOPORT_NTH_DTYPE:{
+            flentsycEntIoportNthDtypeArg* arg = (flentsycEntIoportNthDtypeArg*)args;
+            if(arg->n == 0) *(flentiopDtype_t*)rvalDest = flentiopDTYPE_INT;
+            else if(arg->n == 1) *(flentiopDtype_t*)rvalDest = flentiopDTYPE_NUM;
+        }
+        break;
 
-static void  flentstdOperPlusTick(flEntity* plent, flentXenv* xenv){
-    flentIOport* inpA = flentFindPortByID(plent, flentstdOPERPLUS_IN_A, flentiopTYPE_INPUT);
-    flentIOport* inpB = flentFindPortByID(plent, flentstdOPERPLUS_IN_B, flentiopTYPE_INPUT);
-    flentIOport* outp = flentFindPortByID(plent, flentstdOPERPLUS_OUT, flentiopTYPE_OUTPUT);
-    
-    flentiopDtype_t inpAdtype = flentiopGetDataType(inpA);
-    flentiopDtype_t inpBdtype = flentiopGetDataType(inpB);
-    if( inpAdtype == flentiopDTYPE_NIL || inpBdtype  == flentiopDTYPE_NIL){
-        return;
+        case flentsycgetENT_IOPORT_ACCEPT_DTYPE:{
+            flentsycEntIoportAcceptDtypeArg* arg = (flentsycEntIoportAcceptDtypeArg*)args;
+            if(arg->dtype == flentiopDTYPE_INT || arg->dtype == flentiopDTYPE_NUM)
+                *(bool*)rvalDest = true;
+        }
+        break;
     }
-
-    flint_t intOpA, intOpB, intSum;
-    flnum_t numOpA, numOpB, numSum;
-
-    if(inpAdtype == inpBdtype){
-
-    }else{
-
-    }
 }
 
-flEntity* flentstdOperPlusNew(flentXenv* xenv){
-    flEntity* plusEnt = flentNew(xenv, 3);
-    flentSetTick(plusEnt, flentstdOperPlusTick);
-    flentSetHscmd(plusEnt, flentstdOperPlusHscmd);
-
-    flentAddPort( plusEnt, flentiopNew(flentstdOPERPLUS_IN_A, flentiopTYPE_INPUT, 2) );
-    flentAddPort( plusEnt, flentiopNew(flentstdOPERPLUS_IN_B, flentiopTYPE_INPUT, 2) );
-    flentAddPort( plusEnt, flentiopNew(flentstdOPERPLUS_OUT, flentiopTYPE_OUTPUT, 2) );
-
-    return plusEnt;
+#define _flentstdBAoperDefineFuncs(operName, intEvalExp, numEvalExp)\
+static void  flentstd##operName##Tick(flEntity* baoEnt, flentXenv* xenv){\
+    flentIOport* inpA = flentFindPortByID(baoEnt, flentstdBINOPER_IN_A, flentiopTYPE_INPUT);\
+    flentIOport* inpB = flentFindPortByID(baoEnt, flentstdBINOPER_IN_B, flentiopTYPE_INPUT);\
+    flentIOport* outp = flentFindPortByID(baoEnt, flentstdBINOPER_OUT, flentiopTYPE_OUTPUT);\
+    if(outp->isBusy){\
+        flentiopSetIsBusy(inpA, true);\
+        flentiopSetIsBusy(inpB, true);\
+        return;\
+    }else if(inpA->isBusy || inpB->isBusy){\
+        flentiopSetIsBusy(inpA, false);\
+        flentiopSetIsBusy(inpB, false);\
+    }\
+\
+    flentiopDtype_t inpAdtype = flentiopGetDataType(inpA);\
+    flentiopDtype_t inpBdtype = flentiopGetDataType(inpB);\
+    if( inpAdtype == flentiopDTYPE_NIL || inpBdtype  == flentiopDTYPE_NIL){\
+        return;\
+    }\
+\
+    if(inpAdtype == inpBdtype && inpAdtype == flentiopDTYPE_INT){\
+        flint_t intOpA = *(flint_t*)flentiopGetData(inpA);\
+        flint_t intOpB = *(flint_t*)flentiopGetData(inpB);\
+\
+        flint_t intResult = intEvalExp;\
+        flentiopPut(outp, flentiopDTYPE_INT, &intResult, sizeof(flint_t));\
+    }else{\
+        flnum_t numOpA = (inpAdtype == flentiopDTYPE_NUM)? \
+                *(flnum_t*)flentiopGetData(inpA) :\
+                (flnum_t)*(flint_t*)flentiopGetData(inpA);\
+\
+        flnum_t numOpB = (inpBdtype == flentiopDTYPE_NUM)? \
+                *(flnum_t*)flentiopGetData(inpB) :\
+                (flnum_t)*(flint_t*)flentiopGetData(inpB);\
+\
+        flnum_t numResult = numEvalExp;\
+        flentiopPut(outp, flentiopDTYPE_NUM, &numResult, sizeof(flnum_t));\
+    }\
+\
+}\
+\
+flEntity* flentstd##operName##New(flentXenv* xenv){\
+    flEntity* operName##Ent = flentNew(xenv, 3);\
+    flentSetTick(operName##Ent, flentstd##operName##Tick);\
+    flentSetHscmd(operName##Ent, flentstdBAoperHscmd);\
+\
+    flentAddPort( operName##Ent, flentiopNew(flentstdBINOPER_IN_A, flentiopTYPE_INPUT, 2) );\
+    flentAddPort( operName##Ent, flentiopNew(flentstdBINOPER_IN_B, flentiopTYPE_INPUT, 2) );\
+    flentAddPort( operName##Ent, flentiopNew(flentstdBINOPER_OUT, flentiopTYPE_OUTPUT, 2) );\
+\
+    return operName##Ent;\
 }
+
+_flentstdBAoperDefineFuncs(Add, intOpA+intOpB, numOpA+numOpB)
+
+_flentstdBAoperDefineFuncs(Sub, intOpA-intOpB, numOpA-numOpB)
+
+_flentstdBAoperDefineFuncs(Mult, intOpA*intOpB, numOpA*numOpB)
+
+_flentstdBAoperDefineFuncs(Div, intOpA/intOpB, numOpA/numOpB)
+
+_flentstdBAoperDefineFuncs(Mod, intOpA%intOpB, (flnum_t)fmod(numOpA, numOpB))
+
+_flentstdBAoperDefineFuncs(Pow, (flint_t)pow(intOpA, intOpB), (flnum_t)pow(numOpA, numOpB))

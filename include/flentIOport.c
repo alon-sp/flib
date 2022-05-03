@@ -45,17 +45,17 @@ void flentiopFree(flentIOport* iop){
     flmemFree(iop);
 }
 
-//Check whether the given port accepts all data types of the other port($portO)
-static bool _flentiopAcceptAllDtype(flentIOport* port, flentIOport* portO){
-    if(!port->dataTypeCount) return true;
+//Check whether the given port accepts all data types of the other port($otherPort)
+static bool _flentiopAcceptAllDtype(flentIOport* port, flentIOport* otherPort){
+    if( !(port->dataTypeCount && otherPort->dataTypeCount) ) return true;
 
     bool opStatus = false;
 
-    if(port->entity && portO->entity){
-        for(flentiopDataType_t i = 1; i <= portO->dataTypeCount; i++){
-            flentsycEntIoportNthDtypeArg dtypeArg = {.port = portO, .n = i};
-            flentiopDtype_t dtype = flentiopDTYPE_NIL;
-            portO->entity->hscmd(flentsycgetENT_IOPORT_NTH_DTYPE, &dtypeArg, &dtype);
+    if(port->entity && otherPort->entity){
+        for(flentiopDataType_t i = 0; i < otherPort->dataTypeCount; i++){
+            flentsycEntIoportNthDtypeArg dtypeArg = {.port = otherPort, .n = i};
+            flentiopDtype_t dtype = _flentiopDTYPE_NONE_;
+            otherPort->entity->hscmd(flentsycgetENT_IOPORT_NTH_DTYPE, &dtypeArg, &dtype);
 
             bool acceptStatus = false;
             flentsycEntIoportAcceptDtypeArg acceptArg = {.port = port, .dtype = dtype};
@@ -73,8 +73,6 @@ static bool _flentiopAcceptAllDtype(flentIOport* port, flentIOport* portO){
 
 static bool flentiopIscomp(flentIOport* pA, flentIOport* pB){
     if( pA->type == pB->type ) return false;
-
-    if(pA->dataTypeCount < 0 || pB->dataTypeCount < 0) return true;
 
     return pA->type == flentiopTYPE_INPUT? 
         _flentiopAcceptAllDtype(pA, pB) : _flentiopAcceptAllDtype(pB, pA) ;
@@ -121,7 +119,7 @@ static void flentiopHandleInvalidOperation(flentIOport* port, const char* operNa
         port->entity->hscmd(flentsycgetIOPORT_NAME, port, &portName);
     }
     flArray* errLog = flarrNew(strlen(portName)+strlen(operNameStr)+strlen(portAdjStr)+16, sizeof(char));
-    flerrHandle(flarrstrPushs(errLog, 6, FLSTR("INVop:"), operNameStr, FLSTR(" on ") , portAdjStr ,FLSTR(" port: "), portName));
+    flerrHandle(flarrstrPushs(errLog, 6, FLSTR("\nINVop:"), operNameStr, FLSTR(" on ") , portAdjStr ,FLSTR(" port: "), portName));
     flarrFree(errLog);
 }
 

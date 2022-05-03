@@ -7,19 +7,20 @@
 
 #include"flTypes.h"
 
-typedef uint8_t flentiopDataType_t;
-typedef uint8_t flentiopDtype_t;
+typedef int8_t flentiopDataType_t;
+typedef int8_t flentiopDtype_t;
+#define _flentiopDTYPE_NONE_ -127
 
-typedef int8_t flentiopDataTypeCount_t;
-typedef int8_t flentiopDTC_t;
+typedef uint8_t flentiopDataTypeCount_t;
+typedef uint8_t flentiopDTC_t;
 
 #define flentiopDTYPE_NIL       0
-#define flentiopDTYPE_BOOL      201
-#define flentiopDTYPE_BYTS      202
-#define flentiopDTYPE_INT       203
-#define flentiopDTYPE_NUM       204
-#define flentiopDTYPE_STR       205
-#define flentiopDTYPE_JSON      206
+#define flentiopDTYPE_BOOL      120
+#define flentiopDTYPE_BYTS      121
+#define flentiopDTYPE_INT       122
+#define flentiopDTYPE_NUM       123
+#define flentiopDTYPE_STR       124
+#define flentiopDTYPE_JSON      125
 
 #define flentiopDTYPE_DPTR      207
 typedef struct flentiopDptr flentiopDptr;

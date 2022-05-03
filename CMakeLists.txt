@@ -21,4 +21,4 @@ add_library(flib
     ./include/flentXenv.c
     ./include/flentstd.c
 )
-target_link_libraries(flib ${SDL2_LIBRARIES})
+target_link_libraries(flib ${SDL2_LIBRARIES} m)
