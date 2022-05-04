@@ -99,9 +99,14 @@ _flentstdBAoperDefineFuncs(Pow, (flint_t)pow(intOpA, intOpB), (flnum_t)pow(numOp
 //---------------------------------------------------------------------------
 typedef struct{
     flArray* dptrs;
+    uint8_t dptrTotalAllocatedLen;
     uint8_t dptrsMaxLen;
     flArray* buf;
 }flentstdBytsToDptrProps;
+
+static void flentstdBytsToDptrDonecb(flentiopDptr* dptr){
+
+}
 
 static void flentstdBytsToDptrTick(flEntity* ent, flentXenv* xenv){
     flentIOport* input = flentFindPortByID(ent, flentstdBYTSTODPTR_IN, flentiopTYPE_INPUT);
@@ -123,13 +128,18 @@ static void flentstdBytsToDptrTick(flEntity* ent, flentXenv* xenv){
         }
 
         void* bufOldDataPtr = entProps->buf->data;
-        void* newDataLoc = flarrPushs(entProps->buf, flentiopGetData(input), flentiopGetDataSize(input));
+        void* dataLoc = flarrPushs(entProps->buf, flentiopGetData(input), flentiopGetDataSize(input));
         void* bufNewDataPtr = entProps->buf->data;
         if(bufOldDataPtr != bufNewDataPtr){
             for(int i = 0; i<entProps->dptrs->length; i++){
                 flentiopDptr* dptr = (flentiopDptr*)flarrGet(entProps->dptrs, i);
-                _flentiopDptrUpdate(dptr, bufNewDataPtr);
+                _flentiopDptrUpdate( dptr, (char*)bufNewDataPtr + ((char*)bufOldDataPtr - (char*)dptr->_srcBuf) );
             }
         }
+
+        flentiopDptr newDptr  = _flentiopDptrInit(ent, dataLoc, flentiopGetDataSize(input), flentstdBytsToDptrDonecb);
+
     }
+
+    //uncompleted
 }

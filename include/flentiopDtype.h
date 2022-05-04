@@ -41,10 +41,10 @@ struct flentiopDptr{
 
     #define _flentiopDptrDecLsp(dp) _flentiopDptrSetLsp(dp, (dp)->_lsp-1)
 
-    #define _flentiopDptrInit(srcEnt, dataPtr, dataSize, donecb)\
+    #define _flentiopDptrInit(srcEnt, dataPtr, _dataSize, donecb)\
         {\
-            .data = dataPtr, .dataSize = dataSize,\
-            ._srcBuf = dataPtr, ._srcBufSize = dataSize,\
+            .data = dataPtr, .dataSize = _dataSize,\
+            ._srcBuf = dataPtr, ._srcBufSize = _dataSize,\
             ._srcEnt = srcEnt, ._lsp = 0, ._donecb = donecb\
         }
 
