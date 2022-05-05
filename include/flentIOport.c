@@ -150,8 +150,6 @@ static bool _flentiopPerformDefaultPreWriteOps(flentIOport* iop, const char* cal
     return true;
 }
 
-
-
 void flentiopPut(flentIOport* port, flentiopDtype_t dtype, const void* dataPtr, size_t dataSize){
     if( !_flentiopPerformDefaultPreWriteOps(port, FLSTR("flentiopPut"), dtype, dataPtr) ) return;
 
@@ -193,7 +191,6 @@ void flentiopSetIsBusy(flentIOport* port, bool bval){
 
 //--Functions and micros for reading from port--
 //----------------------------------------------
-
 #define _flentiopPerformDefaultPreReadChecks(port, operNameStr, returnVal)\
     if(port->isBusy || port->type == flentiopTYPE_OUTPUT){\
         const char* adjstr = port->isBusy? "busy" : "output";\
@@ -231,6 +228,33 @@ size_t flentiopGetDataSize(flentIOport* port){
     return port->_linkedPort? _flentiopObufGetDataSize(port->_linkedPort) : 0;
 }
 
+#define _flentiopPerformDefaultPreOutputReadChecks(port, operNameStr, returnVal)\
+    if(port->isBusy || port->type == flentiopTYPE_INPUT){\
+        const char* adjstr = port->isBusy? "busy" : "input";\
+        flentiopHandleInvalidOperation(port, FLSTR(operNameStr), FLSTR(adjstr));\
+        return returnVal;\
+    }
+
+flentiopDtype_t flentiopGetOutputDataType(flentIOport* port){
+    _flentiopPerformDefaultPreOutputReadChecks(port, "flentiopGetOutputDataType", flentiopDTYPE_NIL)
+
+    return _flentiopObufGetDataType(port);
+}
+
+void* flentiopGetOutputData(flentIOport* port){
+    _flentiopPerformDefaultPreOutputReadChecks(port, "flentiopGetOutputData", NULL)
+
+    return _flentiopObufGetData(port);
+}
+
+size_t flentiopGetOutputDataSize(flentIOport* port){
+    _flentiopPerformDefaultPreOutputReadChecks(port, "flentiopGetOutputDataSize", 0)
+
+    return _flentiopObufGetDataSize(port);
+}
+
 #undef _flentiopClear
 #undef _flentiopIsComp
 #undef _flentiopPerformDefaultPreWriteOps
+#undef _flentiopPerformDefaultPreReadChecks
+#undef _flentiopPerformDefaultPreOutputReadChecks

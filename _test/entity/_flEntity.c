@@ -25,8 +25,7 @@ static bool runFlentstdBAoperTest(){
     flentXenv* xenv = flentxevNew(2);
 
     flEntity* adder = flentstdAddNew(xenv);
-    flentIOport* adderOutputIn = flentiopNew(0, flentiopTYPE_INPUT, 0);
-    flentiopLink(adderOutputIn, flentFindPortByID(adder, flentstdADD_OUT, flentiopTYPE_OUTPUT));
+    flentIOport* adderOutput = flentFindPortByID(adder, flentstdADD_OUT, flentiopTYPE_OUTPUT);
 
     flentIOport* operAport = flentiopNew(0, flentiopTYPE_OUTPUT, 0);
     flentIOport* operBport = flentiopNew(1, flentiopTYPE_OUTPUT, 0);
@@ -39,11 +38,13 @@ static bool runFlentstdBAoperTest(){
     flentiopPut(operBport, flentiopDTYPE_INT, &intOperB, sizeof(flint_t));
 
     flentxevTick(xenv, 0, 0);
-    status = flentiopGetDataType(adderOutputIn) == flentiopDTYPE_INT && 
-             *(flint_t*)flentiopGetData(adderOutputIn) == intOperA+intOperB;
+    status = flentiopGetOutputDataType(adderOutput) == flentiopDTYPE_INT && 
+             *(flint_t*)flentiopGetOutputData(adderOutput) == intOperA+intOperB;
     flentxevTick(xenv, 0, 0);
-    status = status && flentiopGetDataType(adderOutputIn) == flentiopDTYPE_NIL;
+    status = status && flentiopGetOutputDataType(adderOutput) == flentiopDTYPE_NIL;
 
+    flentiopFree(operAport);
+    flentiopFree(operBport);
     flentxevFree(xenv, true);
 
     return status;

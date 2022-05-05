@@ -144,4 +144,8 @@ flentiopDtype_t flentiopGetDataType(flentIOport* port);
 void* flentiopGetData(flentIOport* port);
 size_t flentiopGetDataSize(flentIOport* port);
 
+flentiopDtype_t flentiopGetOutputDataType(flentIOport* port);
+void* flentiopGetOutputData(flentIOport* port);
+size_t flentiopGetOutputDataSize(flentIOport* port);
+
 #endif
