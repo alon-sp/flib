@@ -9,7 +9,6 @@
 
 typedef int8_t flentiopDataType_t;
 typedef int8_t flentiopDtype_t;
-#define _flentiopDTYPE_NONE_ -127
 
 typedef uint8_t flentiopDataTypeCount_t;
 typedef uint8_t flentiopDTC_t;
@@ -22,7 +21,7 @@ typedef uint8_t flentiopDTC_t;
 #define flentiopDTYPE_STR       124
 #define flentiopDTYPE_JSON      125
 
-#define flentiopDTYPE_DPTR      207
+#define flentiopDTYPE_DPTR      126
 typedef struct flentiopDptr flentiopDptr;
 struct flentiopDptr{
     void* const data;

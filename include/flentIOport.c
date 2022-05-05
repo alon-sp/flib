@@ -49,13 +49,15 @@ void flentiopFree(flentIOport* iop){
 static bool _flentiopAcceptAllDtype(flentIOport* port, flentIOport* otherPort){
     if( !(port->dataTypeCount && otherPort->dataTypeCount) ) return true;
 
-    bool opStatus = false;
+    bool opStatus = true;
 
     if(port->entity && otherPort->entity){
         for(flentiopDataType_t i = 0; i < otherPort->dataTypeCount; i++){
+            
             flentsycEntIoportNthDtypeArg dtypeArg = {.port = otherPort, .n = i};
-            flentiopDtype_t dtype = _flentiopDTYPE_NONE_;
+            flentiopDtype_t dtype = flentiopDTYPE_NIL;
             otherPort->entity->hscmd(flentsycgetENT_IOPORT_NTH_DTYPE, &dtypeArg, &dtype);
+            if(dtype == flentiopDTYPE_NIL) continue;
 
             bool acceptStatus = false;
             flentsycEntIoportAcceptDtypeArg acceptArg = {.port = port, .dtype = dtype};
@@ -64,7 +66,6 @@ static bool _flentiopAcceptAllDtype(flentIOport* port, flentIOport* otherPort){
                 opStatus = false;
                 break;
             }
-            opStatus = true;
         }
     }
 
@@ -87,7 +88,7 @@ bool flentiopLink(flentIOport* port1, flentIOport* port2){
 
         flArray* errLog = flarrNew(strlen(port1Name)+strlen(port2Name)+16, sizeof(char));
 
-        flerrHandle(flarrstrPushs(errLog, 4, FLSTR("ICMport: "), port1Name, FLSTR(" !-> "), port2Name));
+        flerrHandle(flarrstrPushs(errLog, 4, FLSTR("\nICMport: "), port1Name, FLSTR(" !-> "), port2Name));
 
         flarrFree(errLog);
 
