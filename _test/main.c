@@ -1,5 +1,7 @@
 #include<stdio.h>
 
+#define _FLIB_DEBUG_
+
 #include"fl.h"
 
 #include"_flArray.h"
@@ -21,6 +23,12 @@ int main(int argc, char** argv){
     printf("\nRunning flEntity tests\n----------");
     if(_flentRunTests()){
         printf("\n$_flentRunTests: TEST OK\n");
+    }
+
+    printf("\n\n-----TotalFlmemMallocCalls: %u", flmemGetTotalFlmemMallocCalls());
+    printf("\n-----TotalFlmemFreeCalls: %u\n", flmemGetTotalFlmemFreeCalls());
+    if( flmemGetTotalFlmemMallocCalls() != flmemGetTotalFlmemFreeCalls()){
+        onError("!!!!!Possible memory leaks!!!!!\n");
     }
 
     return 0;    

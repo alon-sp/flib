@@ -14,6 +14,8 @@ add_subdirectory( "${PROJECT_SOURCE_DIR}/_test/" )
 
 include_directories( "${PROJECT_SOURCE_DIR}/include" )
 
+add_compile_definitions(_FLIB_DEBUG_)
+
 add_library(flib 
     ./include/fl.c ./include/flError.c 
     ./include/flArray.c ./include/flEntity.c

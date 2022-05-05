@@ -12,7 +12,12 @@
 
 void* flmemMalloc(flint_t nbytes);
 
-#define flmemFree(mptr) free(mptr)
+void flmemFree(void* mptr);
+
+#ifdef _FLIB_DEBUG_
+    uint32_t flmemGetTotalFlmemFreeCalls();
+    uint32_t flmemGetTotalFlmemMallocCalls();
+#endif
 
 void* flmemRealloc(void* mptr, flint_t nbytes);
 
