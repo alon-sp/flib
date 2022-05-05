@@ -40,7 +40,7 @@ flEntity* flentstdPowNew(flentXenv* xenv);
 #define flentstdPOW_IN_B flentstdBINOPER_IN_B
 #define flentstdPOW_OUT flentstdBINOPER_OUT
 
-flEntity* flentstdBytsToDptrNew(flentXenv* xenv, uint8_t maxDptrs);
+flEntity* flentstdBytsToDptrNew(flentXenv* xenv);
 #define flentstdBYTSTODPTR_IN  0
 #define flentstdBYTSTODPTR_OUT 1
 

@@ -45,10 +45,15 @@ typedef int8_t flentsyc_t;
 ///@return const char*
 #define flentsycgetIOPORT_NAME                4
 
+///This command is sent to request the name of an entity
+///@arg flEntity* : Pointer to the target entity
+///@return const char*
+#define flentsycgetENT_NAME                   5
+
 ///This command is sent to request the Nth data type that is accepted by the given port
 ///@arg flentsycEntIoportNthDtypeArg*
 ///@return flentiopDataTypeCount_t
-#define flentsycgetENT_IOPORT_NTH_DTYPE       5
+#define flentsycgetENT_IOPORT_NTH_DTYPE       6
 typedef struct{
     flentIOport* port;
     flentiopDataTypeCount_t n;
@@ -57,7 +62,7 @@ typedef struct{
 ///This command is sent to query whether the given port accept the given data type
 ///@arg flentsycEntIoportAcceptDtypeArg*
 ///@return bool
-#define flentsycgetENT_IOPORT_ACCEPT_DTYPE    6
+#define flentsycgetENT_IOPORT_ACCEPT_DTYPE    7
 typedef struct{
     flentIOport* port;
     flentiopDtype_t dtype;

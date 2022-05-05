@@ -25,11 +25,17 @@ typedef uint8_t flentiopDTC_t;
 #define flentiopDTYPE_DPTR      207
 typedef struct flentiopDptr flentiopDptr;
 struct flentiopDptr{
-    void* data;
-    size_t dataSize;
+    void* const data;
+    #define flentiopDptrSetData(dp, _dataPtr, _dataSize) do{\
+        ( *(void**)(&(dp)->data) = _dataPtr );\
+        ( *(size_t*)(&(dp)->dataSize) = _dataSize );\
+    }while(0)
 
-    void * const _srcBuf;
-    const size_t _srcBufSize;
+    const size_t dataSize;
+
+    void * const _props;
+    #define _flentiopDptrSetProps(dp, props) ( *(void**)(&(dp)->_props) = props )
+
     flEntity * const _srcEnt;
 
     const int _lsp;
@@ -44,15 +50,9 @@ struct flentiopDptr{
     #define _flentiopDptrInit(srcEnt, dataPtr, _dataSize, donecb)\
         {\
             .data = dataPtr, .dataSize = _dataSize,\
-            ._srcBuf = dataPtr, ._srcBufSize = _dataSize,\
+            ._props = NULL,\
             ._srcEnt = srcEnt, ._lsp = 0, ._donecb = donecb\
         }
-
-    #define _flentiopDptrUpdate(dp, newDataPtr)\
-        do{\
-            (dp)->data = (void*)( (char*)(newDataPtr) + ((char*)(dp)->_srcBuf - (char*)(dp)->data) );\
-            *(void**)(&(dp)->_srcBuf) = (newDataPtr);\
-        }while(0)
 };
 
 #endif

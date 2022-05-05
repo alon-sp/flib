@@ -6,6 +6,11 @@
 //-----------------------------------------------
 static void  flentstdBAoperHscmd(flentsyc_t cmd, void *args, void* rvalDest){
     switch(cmd){
+        case flentsycgetENT_NAME:{
+            //to be implemented
+        }
+        break;
+
         case flentsycgetIOPORT_NAME:{
             flentIOport* port = (flentIOport*)args;
             if(port->id == flentstdBINOPER_IN_A) *(char**)rvalDest = FLSTR("A");
@@ -97,23 +102,66 @@ _flentstdBAoperDefineFuncs(Pow, (flint_t)pow(intOpA, intOpB), (flnum_t)pow(numOp
 
 /*----------flentiopDTYPE_BYTS TO flentiopDTYPE_DPTR (BytsToDptr)----------*/
 //---------------------------------------------------------------------------
-typedef struct{
-    flArray* dptrs;
-    uint8_t dptrTotalAllocatedLen;
-    uint8_t dptrsMaxLen;
-    flArray* buf;
-}flentstdBytsToDptrProps;
+
+static void  flentstdBytsToDptrHscmd(flentsyc_t cmd, void *args, void* rvalDest){
+    switch(cmd){
+        case flentsycgetENT_NAME:
+            *(char**)rvalDest = FLSTR("stdBytsToDptr");
+        break;
+
+        case flentsycgetIOPORT_NAME:{
+            flentIOport* port = (flentIOport*)args;
+            if(port->id == flentstdBYTSTODPTR_IN) *(char**)rvalDest = FLSTR("IN");
+            else if(port->id == flentstdBYTSTODPTR_OUT) *(char**)rvalDest = FLSTR("OUT");
+        }
+        break;
+
+        case flentsycgetENT_IOPORT_NTH_DTYPE:{
+            flentsycEntIoportNthDtypeArg* darg = (flentsycEntIoportNthDtypeArg*)args;
+            if(darg->n == 0) *(flentiopDtype_t*)rvalDest = flentiopDTYPE_DPTR;
+            else if(darg->n == 1) *(flentiopDtype_t*)rvalDest = flentiopDTYPE_BYTS;
+        }
+        break;
+
+        case flentsycgetENT_IOPORT_ACCEPT_DTYPE:{
+            flentsycEntIoportAcceptDtypeArg* darg = (flentsycEntIoportAcceptDtypeArg*)args;
+            if(darg->dtype == flentiopDTYPE_DPTR ||
+                (darg->port->id == flentstdBYTSTODPTR_IN && darg->dtype == flentiopDTYPE_BYTS) )
+                     *(bool*)rvalDest = true;
+        }
+        break;
+
+        case flentsycCLEANUP:{
+            flEntity* ent = (flEntity*)args;
+            flentiopDptr* dptr = (flentiopDptr*)ent->props;
+            if(dptr){
+                if(dptr->_props){
+                    flarrFree((flArray*)dptr->_props);
+                    _flentiopDptrSetProps(dptr, NULL);
+                }
+
+                flmemFree(dptr);
+                flentSetProps(ent, NULL);
+            }
+        }
+        break;
+    }
+}
 
 static void flentstdBytsToDptrDonecb(flentiopDptr* dptr){
+    if(!(dptr && dptr->_props)) return;
 
+    flarrSetLength((flArray*)dptr->_props, 0);
+    flentiopSetIsBusy(flentFindPortByID(dptr->_srcEnt, flentstdBYTSTODPTR_IN, flentiopTYPE_INPUT), false);
 }
 
 static void flentstdBytsToDptrTick(flEntity* ent, flentXenv* xenv){
     flentIOport* input = flentFindPortByID(ent, flentstdBYTSTODPTR_IN, flentiopTYPE_INPUT);
     flentIOport* output = flentFindPortByID(ent, flentstdBYTSTODPTR_OUT, flentiopTYPE_OUTPUT);
-    flentstdBytsToDptrProps* entProps = (flentstdBytsToDptrProps*)ent->props;
+    flentiopDptr* dptr = (flentiopDptr*)ent->props;
+    flArray* dBuf = (flArray*)dptr->_props;
 
-    if(output->isBusy || entProps->dptrs->length >= entProps->dptrsMaxLen){
+    if(output->isBusy || (dBuf && dBuf->length) ){
         flentiopSetIsBusy(input, true);
         return;
     }else if(input->isBusy) flentiopSetIsBusy(input, false);
@@ -122,24 +170,32 @@ static void flentstdBytsToDptrTick(flEntity* ent, flentXenv* xenv){
     if(inDtype == flentiopDTYPE_DPTR){
         flentiopPutb(output, flentiopGetBuf(input), flentiopGetBufSize(input));
     }else if(inDtype == flentiopDTYPE_BYTS){
-        if(!entProps->buf){
-            entProps->dptrs = flarrNew(entProps->dptrsMaxLen, sizeof(flentstdBytsToDptrProps));
-            entProps->buf = flarrNew(flentiopGetDataSize(input), sizeof(flbyt_t));
+        if(!dBuf){
+            dBuf = flarrNew( flentiopGetDataSize(input), sizeof(flbyt_t) );
+            _flentiopDptrSetProps( dptr, dBuf );
         }
 
-        void* bufOldDataPtr = entProps->buf->data;
-        void* dataLoc = flarrPushs(entProps->buf, flentiopGetData(input), flentiopGetDataSize(input));
-        void* bufNewDataPtr = entProps->buf->data;
-        if(bufOldDataPtr != bufNewDataPtr){
-            for(int i = 0; i<entProps->dptrs->length; i++){
-                flentiopDptr* dptr = (flentiopDptr*)flarrGet(entProps->dptrs, i);
-                _flentiopDptrUpdate( dptr, (char*)bufNewDataPtr + ((char*)bufOldDataPtr - (char*)dptr->_srcBuf) );
-            }
-        }
+        flarrSetLength(dBuf, 0);
+        flarrPushs(dBuf, flentiopGetData(input), flentiopGetDataSize(input));
+        flentiopDptrSetData(dptr, dBuf->data, dBuf->length);
 
-        flentiopDptr newDptr  = _flentiopDptrInit(ent, dataLoc, flentiopGetDataSize(input), flentstdBytsToDptrDonecb);
-
+        flentiopPut(output, flentiopDTYPE_DPTR, &dptr, sizeof(dptr));
     }
+}
 
-    //uncompleted
+flEntity* flentstdBytsToDptrNew(flentXenv* xenv){
+    flEntity* ent = flentNew(xenv, 2);
+
+    flentiopDptr _data = _flentiopDptrInit(ent, NULL, 0, flentstdBytsToDptrDonecb);
+    flentiopDptr* dbuf = flmemMalloc(sizeof(flentiopDptr));
+    memcpy(dbuf, &_data, sizeof(flentiopDptr));
+    flentSetProps(ent, dbuf);
+
+    flentSetTick(ent, flentstdBytsToDptrTick);
+    flentSetHscmd(ent, flentstdBytsToDptrHscmd);
+
+    flentAddPort( ent, flentiopNew(flentstdBYTSTODPTR_IN, flentiopTYPE_INPUT, 2) );
+    flentAddPort(ent, flentiopNew(flentstdBYTSTODPTR_OUT, flentiopTYPE_OUTPUT, 1) );
+
+    return ent;
 }
