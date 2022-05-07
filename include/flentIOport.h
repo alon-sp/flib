@@ -10,6 +10,10 @@
 typedef uint8_t flentiopType_t;
 #define flentiopTYPE_INPUT   1
 #define flentiopTYPE_OUTPUT  2
+#define flentiopTYPE_OM      3/*This is an output port that support multiple input ports*/
+
+#define flentiopTypeToBasicType(type)\
+  ((type) == flentiopTYPE_INPUT? flentiopTYPE_INPUT : flentiopTYPE_OUTPUT)
 
 /**
  * @brief Model a port of an entity
@@ -18,7 +22,7 @@ typedef uint8_t flentiopType_t;
 struct flentIOport{
  /**
  * @note if this pointer is NULL, this port is an input only port and as such any attempt to
- * write to it will result in error(most likely segmentation fault)
+ * write to it will result in error
   *The default data layout of this buffer is as shown:
   *|<--sizeof(flentiopDtype_t)-->|<--buffer len -. -->|
   *|--data type------------------|--data--------------|
@@ -53,6 +57,8 @@ struct flentIOport{
   const flentiopID_t id;
   #define flentiopSetID(iop, _id) *( (flentiopID_t*)(&(iop)->id) ) = _id
 
+  //For port of type flentiopTYPE_MO, this pointer is  a pointer to an flArray of
+  //pointers to flentIOport
   flentIOport * const _linkedPort;
   #define _flentiopSetlinkedPort(iop, lport) *( (flentIOport**)(&(iop)->_linkedPort) ) = lport
 
@@ -63,9 +69,9 @@ struct flentIOport{
   const flentiopDTC_t dataTypeCount;
   #define flentiopSetDataTypeCount(iop, dtc) *( (flentiopDTC_t*)(&(iop)->dataTypeCount) ) = dtc
 
-  //The type of port: whether input, output or io
+  //The type of port: whether input, output or om
   const flentiopType_t type;
-  #define flentiopSetType(iop, typ) *( (flentiopType_t*)(&(iop)->type) ) = typ
+  #define _flentiopSetType(iop, typ) *( (flentiopType_t*)(&(iop)->type) ) = typ
 
   //User defined properties associated with this port
   //This pointer and all associated resources is managed by the entity/user and as
@@ -93,7 +99,13 @@ flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type, flentiopDTC_t dat
 void flentiopFree(flentIOport* iop);
 
 /**
- * @brief Link the two given ports ensuring that the two ports are compatible
+ * @brief Link the two given ports if they are compatible
+ * IF either of $port1 or $port2 is of type flentiopTYPE_OUTPUT and already has a linkage
+ * different from the new link to be created, the said port is upgraded to flentiopTYPE_OM
+ * type port and the new link is added to the existing one.
+ * 
+ * IF either of $port1 or $port2 is of type flentiopTYPE_OM and the new link to be created
+ * doesn't already exist, the new link is added to the existing ones. 
  * @param port1 
  * @param port2 
  */
@@ -129,11 +141,15 @@ void flentiopPutb(flentIOport* port, const void* bytesPtr, size_t bytesSize);
 void flentiopClear(flentIOport* port);
 
 /**
- * @brief Set the busy status of the given port to the given boolean value.
- * @param port 
- * @param bval 
+ * @brief Set the busy status of the given input port to the given boolean value
+ * if possible. THE CALLER must always CHECK the returned value of this function
+ * in order to avoid error arising from reading from a busy port.
+ * @param inputPort a port of type flentiopTYPE_INPUT
+ * @param bval
+ * @return true if after the call $inputPort is equal to $bval | false if it wasn't possible
+ * to change the busy status of $inputPort to the desired.
  */
-void flentiopSetIsBusy(flentIOport* port, bool bval);
+bool flentiopSetIsBusy(flentIOport* inputPort, bool bval);
 
 //--Functions and micros for reading from port--
 //----------------------------------------------

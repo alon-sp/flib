@@ -6,6 +6,35 @@
     _flarrSetLength(port->_obuf, _flentiopOBUF_DTYPE_INDEX+sizeof(flentiopDtype_t));\
     _flentiopObufSetDataType(port, flentiopDTYPE_NIL);
 
+#define _flentiopOmInitLports(omPort)\
+    _flentiopSetlinkedPort(omPort, /**@noted*/(flentIOport*)flarrNew(2, sizeof(flentIOport*)) )
+
+#define _flentiopOmGetLportsLen(omPort) ( ((flArray*)(omPort)->_linkedPort)->length )
+#define _flentiopOmGetLport(omPort, index) ( *(flentIOport**)_flarrGet((flArray*)(omPort)->_linkedPort, index) )
+
+static flentIOport** flentiopOmFindPort(flentIOport* omPort, flentIOport* inPort){
+    flArray* linkedPorts = (flArray*)omPort->_linkedPort;
+    for(int i = 0; i<linkedPorts->length; i++){
+        flentIOport** ploc = (flentIOport**)_flarrGet(linkedPorts, i);
+        if(*ploc == inPort) return ploc;
+    }
+
+    return NULL;
+}
+
+static void flentiopOmAddPort(flentIOport* omPort, flentIOport* inPort){
+    if(!flentiopOmFindPort(omPort, inPort)){
+        flentIOport** nullLoc = flentiopOmFindPort(omPort, NULL);
+        if(nullLoc) *nullLoc = inPort;
+        else flarrPush((flArray*)omPort->_linkedPort, &inPort);
+    }
+}
+
+static void flentiopOmRemovePort(flentIOport* omPort, flentIOport* inPort){
+    flentIOport** ploc = flentiopOmFindPort(omPort, inPort);
+    if(ploc) *ploc = NULL;
+}
+
 flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type, flentiopDTC_t dataTypeCount){
     flentIOport* iop = flmemMalloc(sizeof(flentIOport));
 
@@ -21,12 +50,14 @@ flentIOport* flentiopNew(flentiopID_t id, flentiopType_t type, flentiopDTC_t dat
         _flentiopClear(iop);
     }
 
+    _flentiopSetlinkedPort(iop, NULL);
+    if(type == flentiopTYPE_OM) _flentiopOmInitLports(iop);
+
     _flentiopSetIsBusy(iop, false);
     flentiopSetEntity(iop, NULL);
     flentiopSetID(iop, id);
-    _flentiopSetlinkedPort(iop, NULL);
     flentiopSetDataTypeCount(iop, dataTypeCount);
-    flentiopSetType(iop, type);
+    _flentiopSetType(iop, type);
     flentiopSetProps(iop, NULL);
 
     return iop;
@@ -45,23 +76,23 @@ void flentiopFree(flentIOport* iop){
     flmemFree(iop);
 }
 
-//Check whether the given port accepts all data types of the other port($otherPort)
-static bool _flentiopAcceptAllDtype(flentIOport* port, flentIOport* otherPort){
-    if( !(port->dataTypeCount && otherPort->dataTypeCount) ) return true;
+//Check whether the given input port accepts all data types of the given output port
+static bool _flentiopAcceptAllDtype(flentIOport* inPort, flentIOport* outPort){
+    if( !(inPort->dataTypeCount && outPort->dataTypeCount) ) return true;
 
     bool opStatus = true;
 
-    if(port->entity && otherPort->entity){
-        for(flentiopDataType_t i = 0; i < otherPort->dataTypeCount; i++){
+    if(inPort->entity && outPort->entity){
+        for(flentiopDataType_t i = 0; i < outPort->dataTypeCount; i++){
             
-            flentsycEntIoportNthDtypeArg dtypeArg = {.port = otherPort, .n = i};
+            flentsycEntIoportNthDtypeArg dtypeArg = {.port = outPort, .n = i};
             flentiopDtype_t dtype = flentiopDTYPE_NIL;
-            otherPort->entity->hscmd(flentsycgetENT_IOPORT_NTH_DTYPE, &dtypeArg, &dtype);
+            outPort->entity->hscmd(flentsycgetENT_IOPORT_NTH_DTYPE, &dtypeArg, &dtype);
             if(dtype == flentiopDTYPE_NIL) continue;
 
             bool acceptStatus = false;
-            flentsycEntIoportAcceptDtypeArg acceptArg = {.port = port, .dtype = dtype};
-            port->entity->hscmd(flentsycgetENT_IOPORT_ACCEPT_DTYPE, &acceptArg, &acceptStatus);
+            flentsycEntIoportAcceptDtypeArg acceptArg = {.port = inPort, .dtype = dtype};
+            inPort->entity->hscmd(flentsycgetENT_IOPORT_ACCEPT_DTYPE, &acceptArg, &acceptStatus);
             if(!acceptStatus){
                 opStatus = false;
                 break;
@@ -72,41 +103,58 @@ static bool _flentiopAcceptAllDtype(flentIOport* port, flentIOport* otherPort){
     return opStatus;
 }
 
-static bool flentiopIscomp(flentIOport* pA, flentIOport* pB){
-    if( pA->type == pB->type ) return false;
-
-    return pA->type == flentiopTYPE_INPUT? 
-        _flentiopAcceptAllDtype(pA, pB) : _flentiopAcceptAllDtype(pB, pA) ;
-}
-
 bool flentiopLink(flentIOport* port1, flentIOport* port2){
-    if( !flentiopIscomp(port1, port2) ){
-        char* port1Name = FLSTR("");
-        if(port1->entity) port1->entity->hscmd(flentsycgetIOPORT_NAME, port1, &port1Name);
-        char* port2Name = FLSTR("");
-        if(port2->entity) port2->entity->hscmd(flentsycgetIOPORT_NAME, port2, &port2Name);
+    if(!(port1 && port2)) return false;
 
-        flArray* errLog = flarrNew(strlen(port1Name)+strlen(port2Name)+16, sizeof(char));
+    if(flentiopTypeToBasicType(port1->type) == flentiopTypeToBasicType(port2->type)) goto HANDLE_INCOMPATIBLE_PORT;
 
-        flerrHandle(flarrstrPushs(errLog, 4, FLSTR("\nICMport: "), port1Name, FLSTR(" !-> "), port2Name));
+    flentIOport* inPort =  (port1->type == flentiopTYPE_INPUT)? port1 : port2;
+    flentIOport* outPort = (port1->type == flentiopTYPE_INPUT)? port2 : port1;
 
-        flarrFree(errLog);
+    if(!_flentiopAcceptAllDtype(inPort, outPort)) goto HANDLE_INCOMPATIBLE_PORT;
 
-        return false;
+    _flentiopSetlinkedPort(inPort, outPort);
+    
+    if(outPort->type == flentiopTYPE_OUTPUT && !outPort->_linkedPort){
+        _flentiopSetlinkedPort(outPort, inPort);
+
+    }else if(outPort->type == flentiopTYPE_OUTPUT && outPort->_linkedPort != inPort){
+        //upgrade $outPort to flentiopTYPE_OM type port
+        flentIOport* existingLinkedPort = outPort->_linkedPort;
+        _flentiopSetType(outPort, flentiopTYPE_OM);
+        _flentiopOmInitLports(outPort);
+
+        flentiopOmAddPort(outPort, existingLinkedPort);
     }
 
-    if(port1)_flentiopSetlinkedPort(port1, port2);
-    if(port2)_flentiopSetlinkedPort(port2, port1);
+    if(outPort->type == flentiopTYPE_OM) flentiopOmAddPort(outPort, inPort);
 
     return true;
+
+HANDLE_INCOMPATIBLE_PORT:{
+    char* port1Name = FLSTR("");
+    if(port1->entity) port1->entity->hscmd(flentsycgetIOPORT_NAME, port1, &port1Name);
+    char* port2Name = FLSTR("");
+    if(port2->entity) port2->entity->hscmd(flentsycgetIOPORT_NAME, port2, &port2Name);
+
+    flArray* errLog = flarrNew(strlen(port1Name)+strlen(port2Name)+16, sizeof(char));
+
+    flerrHandle(flarrstrPushs(errLog, 4, FLSTR("\nICMport: "), port1Name, FLSTR(" !-> "), port2Name));
+
+    flarrFree(errLog);
+}
+
+    return false;
 }
 
 flentIOport* flentiopUnlink(flentIOport* iop){
     if( !(iop && iop->_linkedPort) ) return NULL;
+    if(iop->type == flentiopTYPE_OM) return NULL;
 
     flentIOport* linkedPort = iop->_linkedPort;
+    if(linkedPort->type == flentiopTYPE_OM) flentiopOmRemovePort(linkedPort, iop);
+    else _flentiopSetlinkedPort(linkedPort, NULL);
 
-    _flentiopSetlinkedPort(linkedPort, NULL);
     _flentiopSetlinkedPort(iop, NULL);
 
     return linkedPort;
@@ -134,7 +182,15 @@ static bool _flentiopPerformDefaultPreWriteOps(flentIOport* iop, const char* cal
         return false;
     }
 
-    if(iop->_linkedPort && iop->_linkedPort->entity) _flentEnableTick(iop->_linkedPort->entity);
+
+    if(iop->type == flentiopTYPE_OM) {
+        for(int i = 0; i < _flentiopOmGetLportsLen(iop); i++){
+            flentIOport* lp = _flentiopOmGetLport(iop, i);
+            if(lp && lp->entity) _flentEnableTick(lp->entity);
+        }
+    }else{
+        if(iop->_linkedPort && iop->_linkedPort->entity)_flentEnableTick(iop->_linkedPort->entity);
+    }
 
     if(newDataType == flentiopDTYPE_DPTR){
         flentiopDptr* dptr = *(flentiopDptr**)newDataPtr;
@@ -176,18 +232,30 @@ void flentiopClear(flentIOport* port){
     _flentiopClear(port);
 }
 
-void flentiopSetIsBusy(flentIOport* port, bool bval){
-    if(port->type == flentiopTYPE_OUTPUT){
+bool flentiopSetIsBusy(flentIOport* port, bool bval){
+    if(flentiopTypeToBasicType(port->type) == flentiopTYPE_OUTPUT){
         flentiopHandleInvalidOperation(port, "flentiopSetIsBusy", "output");
     }
 
-    if(port->isBusy == bval) return;
+    if(port->isBusy == bval) return true;
+    
+//!!incompleted function!!
+//------------------------
+    if(port->type == flentiopTYPE_OM){
+        if(bval && !port->isBusy){
 
-    _flentiopSetIsBusy(port, bval);
-    if( port->_linkedPort){
-        _flentiopSetIsBusy(port->_linkedPort, bval);
-        if(port->_linkedPort->entity) _flentEnableTick(port->_linkedPort->entity);
+        }else if(!bval && port->isBusy){
+
+        }
+    }else{
+        _flentiopSetIsBusy(port, bval);
+        if( port->_linkedPort){
+            _flentiopSetIsBusy(port->_linkedPort, bval);
+            if(port->_linkedPort->entity) _flentEnableTick(port->_linkedPort->entity);
+        }
     }
+
+    return true;
 }
 
 //--Functions and micros for reading from port--
@@ -255,6 +323,7 @@ size_t flentiopGetOutputDataSize(flentIOport* port){
 }
 
 #undef _flentiopClear
+#undef _flentiopOmInitLports
 #undef _flentiopIsComp
 #undef _flentiopPerformDefaultPreWriteOps
 #undef _flentiopPerformDefaultPreReadChecks
