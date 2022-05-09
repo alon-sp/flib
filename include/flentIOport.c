@@ -256,7 +256,7 @@ void flentiopPut(flentIOport* port, flentiopDtype_t dtype, const void* dataPtr, 
         flarrSetLength(port->_obuf, _flentiopOBUF_DATA_INDEX+dataSize);
     }
     _flentiopObufSetDataType(port, dtype);
-    _flarrPuts(port->_obuf, _flentiopOBUF_DATA_INDEX, dataPtr, dataSize);
+    if(dataPtr) _flarrPuts(port->_obuf, _flentiopOBUF_DATA_INDEX, dataPtr, dataSize);
 }
 
 void flentiopPutb(flentIOport* port, const void* bytesPtr, size_t bytesSize){
@@ -265,7 +265,7 @@ void flentiopPutb(flentIOport* port, const void* bytesPtr, size_t bytesSize){
         *(flentiopDtype_t*)bytesPtr, (char*)bytesPtr + sizeof(flentiopDtype_t)) ) return;
 
     if(bytesSize != port->_obuf->length) flarrSetLength(port->_obuf, bytesSize);
-    _flarrPuts(port->_obuf, 0, bytesPtr, bytesSize);
+    if(bytesPtr) _flarrPuts(port->_obuf, 0, bytesPtr, bytesSize);
 }
 
 void flentiopClear(flentIOport* port){
