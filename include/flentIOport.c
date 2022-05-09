@@ -147,6 +147,7 @@ bool flentiopLink(flentIOport* port1, flentIOport* port2){
 
     if(!_flentiopAcceptAllDtype(inPort, outPort)) goto HANDLE_INCOMPATIBLE_PORT;
 
+    if(inPort->_linkedPort) flentiopUnlink(inPort);
     _flentiopSetlinkedPort(inPort, outPort);
     
     if(outPort->type == flentiopTYPE_OUTPUT && !outPort->_linkedPort){
