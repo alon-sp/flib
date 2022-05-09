@@ -6,12 +6,16 @@ static bool runPortReadAndWriteTest(){
     flentIOport* inp = flentiopNew(1, flentiopTYPE_INPUT, 0);
     flentIOport* outp = flentiopNew(2, flentiopTYPE_OUTPUT, 0);
     flentiopLink(inp, outp);
-    flentiopPut(outp, flentiopDTYPE_STR, "Hello", strlen("Hello")+1);
+
+    const char* origHstr = "Hello World!";
+    flentiopPut(outp, flentiopDTYPE_STR, origHstr, strlen(origHstr)+1);
 
     flentiopDtype_t dtype = flentiopGetDataType(inp);
     const char* hellostr = (const char*)flentiopGetData(inp);
 
-    bool status = ( dtype == flentiopDTYPE_STR && strcmp("Hello", hellostr) == 0 );
+    bool status = ( dtype == flentiopDTYPE_STR && 
+                strlen(origHstr)+1 == flentiopGetDataSize(inp) &&
+                strcmp(origHstr, hellostr) == 0 );
 
     flentiopFree(inp);
     flentiopFree(outp);
