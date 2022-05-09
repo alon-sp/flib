@@ -91,6 +91,60 @@ static bool runFlentstdBytsToDptrTest(){
     return status;
 }
 
+static bool runFlentiopTypeMoTest(){
+    bool status = false;
+
+    flentXenv* xenv = flentxevNew(2);
+
+    flEntity* adder1 = flentstdAddNew(xenv);
+    flEntity* adder2 = flentstdAddNew(xenv);
+    flEntity* adder3 = flentstdAddNew(xenv);
+    flentIOport* adder3Out = flentFindPortByID(adder3, flentstdADD_OUT, flentiopTYPE_OUTPUT);
+
+    //Set up a network to evaluate the expression ( (2+2)+(2+3) )
+    flentIOport* operPort = flentiopNew(0, flentiopTYPE_OUTPUT, 0);
+    flentIOport* adder2InBOperPort = flentiopNew(1, flentiopTYPE_OUTPUT, 0);
+
+    flentiopLink(operPort, flentFindPortByID(adder1, flentstdADD_IN_A, flentiopTYPE_INPUT));
+    flentiopLink(operPort, flentFindPortByID(adder1, flentstdADD_IN_B, flentiopTYPE_INPUT));
+    flentiopLink(operPort, flentFindPortByID(adder2, flentstdADD_IN_A, flentiopTYPE_INPUT));
+    flentiopLink(adder2InBOperPort, flentFindPortByID(adder2, flentstdADD_IN_B, flentiopTYPE_INPUT));
+    flentiopLink(flentFindPortByID(adder1, flentstdADD_OUT, flentiopTYPE_OUTPUT), 
+                 flentFindPortByID(adder3, flentstdADD_IN_A, flentiopTYPE_INPUT));
+    flentiopLink(flentFindPortByID(adder2, flentstdADD_OUT, flentiopTYPE_OUTPUT), 
+                 flentFindPortByID(adder3, flentstdADD_IN_B, flentiopTYPE_INPUT));
+
+    int operPortData = 2;
+    flentiopPut(operPort, flentiopDTYPE_INT, &operPortData, sizeof(operPortData));
+    int adder2InBOperPortData = 3;
+    flentiopPut(adder2InBOperPort, flentiopDTYPE_INT, &adder2InBOperPortData, sizeof(adder2InBOperPortData));
+
+    //Activate the busy status of one port and check to ensure that it affect only connected ports
+    flentiopSetIsBusy(flentFindPortByID(adder1, flentstdADD_IN_A, flentiopTYPE_INPUT), true);
+    status = flentFindPortByID(adder1, flentstdADD_IN_A, flentiopTYPE_INPUT)->isBusy &&
+             flentFindPortByID(adder1, flentstdADD_IN_B, flentiopTYPE_INPUT)->isBusy &&
+             flentFindPortByID(adder2, flentstdADD_IN_A, flentiopTYPE_INPUT)->isBusy &&
+             !flentFindPortByID(adder2, flentstdADD_IN_B, flentiopTYPE_INPUT)->isBusy;
+    
+    //Attempt deactivating the busy status set above using a different connected port
+    status = status && !flentiopSetIsBusy(flentFindPortByID(adder1, flentstdADD_IN_B, flentiopTYPE_INPUT), false);
+
+    //Attempt deactivating the busy status set above using the port that activated it
+    status = status && flentiopSetIsBusy(flentFindPortByID(adder1, flentstdADD_IN_A, flentiopTYPE_INPUT), false);
+
+    //Execute the network once and ensure that the result is as expected
+    flentxevTick(xenv, 0, 0);
+    status = status && *(int*)flentiopGetOutputData(adder3Out) == 
+            ( (operPortData+operPortData)+(operPortData+adder2InBOperPortData) );
+
+    flentiopFree(operPort);
+    flentiopFree(adder2InBOperPort);
+
+    flentxevFree(xenv, true);
+
+    return status;
+}
+
 bool _flentRunTests(){
 
     if(runPortReadAndWriteTest()){
@@ -109,6 +163,12 @@ bool _flentRunTests(){
         printf("\nrunFlentstdBytsToDptrTest: TEST OK");
     }else{
         flerrHandle("\nTESf _flentRunTests: Test Failed !1(runFlentstdBytsToDptrTest)");
+    }
+
+    if(runFlentiopTypeMoTest()){
+        printf("\nrunFlentiopTypeMoTest: TEST OK");
+    }else{
+        flerrHandle("\nTESf _flentRunTests: Test Failed !1(runFlentiopTypeMoTest)");
     }
 
     return true;
