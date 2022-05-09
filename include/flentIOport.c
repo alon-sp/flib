@@ -11,6 +11,7 @@ static bool _flentiopOmSetIsBusy(flentIOport* port, bool bval);
 
 struct omLinkedPort{
     flArray* ports;//An array of pointers to all linked ports
+    #define _flentiopOmGetPorts(omPort) ( ((struct omLinkedPort*)(omPort)->_linkedPort)->ports )
 
     //This is the port responsible for activating the lastest busy status of the 
     //target flentiopTYPE_OM type port.
@@ -28,12 +29,12 @@ static void _flentiopOmInitLport(flentIOport* omPort){
     _flentiopSetlinkedPort(omPort, /**@noted*/(void*)omLport );
 }
 
+
 #define _flentiopOmFreeLport(omPort) do{\
+    if(_flentiopOmGetPorts(omPort)) flarrFree(_flentiopOmGetPorts(omPort));\
     if(omPort->_linkedPort) flmemFree( (struct omLinkedPort*)omPort->_linkedPort );\
     _flentiopSetlinkedPort(omPort, NULL);\
 }while(0)
-
-#define _flentiopOmGetPorts(omPort) ( ((struct omLinkedPort*)(omPort)->_linkedPort)->ports )
 
 #define _flentiopOmGetPortsLen(omPort) (  _flentiopOmGetPorts(omPort)->length  )
 
