@@ -57,7 +57,7 @@ struct flentIOport{
   const flentiopID_t id;
   #define flentiopSetID(iop, _id) *( (flentiopID_t*)(&(iop)->id) ) = _id
 
-  //For port of type flentiopTYPE_MO, this pointer is  a pointer to a different struct
+  //For port of type flentiopTYPE_MO, this pointer is  a pointer to omLinkedPort struct
   flentIOport * const _linkedPort;
   #define _flentiopSetlinkedPort(iop, lport) *( (flentIOport**)(&(iop)->_linkedPort) ) = lport
 

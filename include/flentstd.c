@@ -45,8 +45,8 @@ static void  flentstd##operName##Tick(flEntity* baoEnt, flentXenv* xenv){\
         flentiopSetIsBusy(inpB, true);\
         return;\
     }else if(inpA->isBusy || inpB->isBusy){\
-        flentiopSetIsBusy(inpA, false);\
-        flentiopSetIsBusy(inpB, false);\
+        if( !flentiopSetIsBusy(inpA, false) ) return;\
+        if( !flentiopSetIsBusy(inpB, false) ) return;\
     }\
 \
     flentiopDtype_t inpAdtype = flentiopGetDataType(inpA);\
@@ -164,7 +164,7 @@ static void flentstdBytsToDptrTick(flEntity* ent, flentXenv* xenv){
     if(output->isBusy || (dBuf && dBuf->length) ){
         flentiopSetIsBusy(input, true);
         return;
-    }else if(input->isBusy) flentiopSetIsBusy(input, false);
+    }else if(input->isBusy) if( !flentiopSetIsBusy(input, false) ) return;
 
     flentiopDtype_t inDtype = flentiopGetDataType(input);
     if(inDtype == flentiopDTYPE_DPTR){

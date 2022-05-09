@@ -25,7 +25,7 @@ static void _flentiopOmInitLport(flentIOport* omPort){
     struct omLinkedPort* omLport = flmemMalloc(sizeof(struct omLinkedPort));
     omLport->ports = flarrNew(2, sizeof(flentIOport*));
     omLport->busyPort = NULL;
-    _flentiopSetlinkedPort(omPort, /**@noted*/(flentIOport*)omLport );
+    _flentiopSetlinkedPort(omPort, /**@noted*/(void*)omLport );
 }
 
 #define _flentiopOmFreeLport(omPort) do{\
