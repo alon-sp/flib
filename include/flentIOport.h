@@ -45,6 +45,9 @@ struct flentIOport{
   
   #define _flentiopSetObuf(iop, obuf) *( (flArray**)(&(iop)->_obuf) ) = obuf
 
+  #define flentiopEnsureObufCapacity(outputPort, _capacity)\
+    if((_capacity) > outputPort->_obuf->capacity) flarrAllocCapacity(outputPort->_obuf, _capacity)
+
   //If this is an INPUT port and this flag is true => this port is currently not accepting input
   //On the other hand if it's an OUTPUT port => this port is not available for writing.
   //Any write or read operation on any such port will result in error
