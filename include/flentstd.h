@@ -1,7 +1,8 @@
 #ifndef FLENTSTDHEADERH_INCLUDE
 #define FLENTSTDHEADERH_INCLUDE
 
-#include"math.h"
+#include<stdio.h>
+#include<math.h>
 
 #include"flEntity.h"
 #include"flentXenv.h"
@@ -48,7 +49,7 @@ flEntity* flentstdToStrNew(flentXenv* xenv);
 #define flentstdTOSTR_IN  0
 #define flentstdTOSTR_OUT 1
 
-// flEntity* flentstdPrintsNew(flentXenv* xenv);
-// #define flentstdPRINTS_IN  0
+flEntity* flentstdPrintsNew(flentXenv* xenv);
+#define flentstdPRINTS_IN  0
 
 #endif

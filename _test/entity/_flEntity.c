@@ -192,6 +192,23 @@ static bool runFlentstdToStrTest(){
     return status;
 }
 
+static bool runFlentstdPrintsTest(){
+    flentXenv* xenv = flentxevNew(1);
+    flEntity* printer = flentstdPrintsNew(xenv);
+    flentIOport* printerDataInPort = flentiopNew(0, flentiopTYPE_OUTPUT, 0);
+
+    char* strData = "\n--runFlentstdPrintsTest: !!Hello new World!!--";
+    flentiopPut(printerDataInPort, flentiopDTYPE_STR, strData, strlen(strData)+1);
+    flentiopLink(printerDataInPort, flentFindPortByID(printer, flentstdPRINTS_IN, flentiopTYPE_INPUT));
+
+    //run entity and check console for desire output.
+    flentxevTick(xenv, 0, 0);
+
+    flentiopFree(printerDataInPort);
+    flentxevFree(xenv, true);
+    return true;
+}
+
 bool _flentRunTests(){
 
     if(runPortReadAndWriteTest()){
@@ -224,5 +241,11 @@ bool _flentRunTests(){
         flerrHandle("\nTESf _flentRunTests: Test Failed !1(runFlentstdToStrTest)");
     }
 
-    return true;
+    if(runFlentstdPrintsTest()){
+        printf("\nrunFlentstdPrintsTest: TEST OK");
+    }else{
+        flerrHandle("\nTESf _flentRunTests: Test Failed !1(runFlentstdPrintsTest)");
+    }
+
+    return true; 
 }
