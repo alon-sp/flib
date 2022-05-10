@@ -199,3 +199,104 @@ flEntity* flentstdBytsToDptrNew(flentXenv* xenv){
 
     return ent;
 }
+
+/*----------flentiopDTYPE TO flentiopDTYPE_STR (ToStr)----------------------*/
+//---------------------------------------------------------------------------
+
+static void  flentstdToStrHscmd(flentsyc_t cmd, void *args, void* rvalDest){
+    switch(cmd){
+        case flentsycgetENT_NAME:
+            *(char**)rvalDest = FLSTR("stdToStr");
+        break;
+
+        case flentsycgetIOPORT_NAME:{
+            flentIOport* port = (flentIOport*)args;
+            if(port->id == flentstdTOSTR_IN) *(char**)rvalDest = FLSTR("IN");
+            else if(port->id == flentstdTOSTR_OUT) *(char**)rvalDest = FLSTR("OUT");
+        }
+        break;
+
+        case flentsycgetENT_IOPORT_NTH_DTYPE:{
+            flentsycEntIoportNthDtypeArg* arg = (flentsycEntIoportNthDtypeArg*)args;
+            if(arg->port->id == flentstdTOSTR_OUT && arg->n == 0) 
+                *(flentiopDtype_t*)rvalDest = flentiopDTYPE_STR;
+        }
+        break;
+
+        case flentsycgetENT_IOPORT_ACCEPT_DTYPE:{
+            flentsycEntIoportAcceptDtypeArg* arg = (flentsycEntIoportAcceptDtypeArg*)args;
+            if(arg->port->id == flentstdTOSTR_OUT){
+                if(arg->dtype == flentiopDTYPE_STR) *(bool*)rvalDest = true;
+            }else *(bool*)rvalDest = true;
+        }
+        break;
+    }
+}
+
+static void flentstdToStrTick(flEntity* ent, flentXenv* xenv){
+    flentIOport* input = flentFindPortByID(ent, flentstdTOSTR_IN, flentiopTYPE_INPUT);
+    flentIOport* output = flentFindPortByID(ent, flentstdTOSTR_OUT, flentiopTYPE_OUTPUT);
+
+    if(output->isBusy){
+        flentiopSetIsBusy(input, true);
+        return;
+    }else if(input->isBusy) if(!flentiopSetIsBusy(input, false)) return;
+
+    switch(flentiopGetDataType(input)){
+        case flentiopDTYPE_BOOL:
+            flentiopPut(output, flentiopDTYPE_STR, *(bool*)flentiopGetData(input)? "1":"0", 2);
+        break;
+
+        case flentiopDTYPE_INT:{
+            char numBuf[25];
+            flintToStr(numBuf, *(flint_t*)flentiopGetData(input));
+            flentiopPut(output, flentiopDTYPE_STR, numBuf, strlen(numBuf)+1 );
+        }
+        break;
+
+        case flentiopDTYPE_NUM:{
+            char numBuf[25];
+            flnumToStr(numBuf, *(flnum_t*)flentiopGetData(input));
+            flentiopPut(output, flentiopDTYPE_STR, numBuf, strlen(numBuf)+1 );
+        }
+        break;
+
+        case flentiopDTYPE_STR:
+        case flentiopDTYPE_JSON:
+            flentiopPut(output, flentiopDTYPE_STR, flentiopGetData(input), flentiopGetDataSize(input));
+        break;
+
+        default:{
+            flbyt_t* bytes = flentiopGetData(input);
+            size_t bytesSize = flentiopGetDataSize(input);
+            if(flentiopGetDataType(input) == flentiopDTYPE_DPTR){
+                flentiopDptr* dp = *(flentiopDptr**)bytes;
+                bytes = dp->data;
+                bytesSize = dp->dataSize;
+            }
+
+            //not mandatory but it ensures that the capacity of the output buffer is expanded if needed
+            flentiopEnsureObufCapacity(output, sizeof(flentiopDtype_t) + (bytesSize*2) + 1);
+
+            flentiopPut(output, flentiopDTYPE_STR, NULL, 0);
+            for(size_t i = 0; i < bytesSize; i++){
+                char hexBuf[5];
+                sprintf(hexBuf, "%02X ", *(bytes+i));
+                flentiopAppendData(output, hexBuf, i+1 == bytesSize? strlen(hexBuf)+1 : strlen(hexBuf));
+            }
+        }
+        break;
+    }
+}
+
+flEntity* flentstdToStrNew(flentXenv* xenv){
+    flEntity* ent = flentNew(xenv, 2);
+
+    flentSetTick(ent, flentstdToStrTick);
+    flentSetHscmd(ent, flentstdToStrHscmd);
+
+    flentAddPort( ent, flentiopNew(flentstdTOSTR_IN, flentiopTYPE_INPUT, 0) );
+    flentAddPort(ent, flentiopNew(flentstdTOSTR_OUT, flentiopTYPE_OUTPUT, 1) );
+
+    return ent;
+}

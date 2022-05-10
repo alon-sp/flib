@@ -44,4 +44,8 @@ flEntity* flentstdBytsToDptrNew(flentXenv* xenv);
 #define flentstdBYTSTODPTR_IN  0
 #define flentstdBYTSTODPTR_OUT 1
 
+flEntity* flentstdToStrNew(flentXenv* xenv);
+#define flentstdTOSTR_IN  0
+#define flentstdTOSTR_OUT 1
+
 #endif
