@@ -281,7 +281,7 @@ static void flentstdToStrTick(flEntity* ent, flentXenv* xenv){
             flentiopPut(output, flentiopDTYPE_STR, NULL, 0);
             for(size_t i = 0; i < bytesSize; i++){
                 char hexBuf[5];
-                sprintf(hexBuf, "%02X ", *(bytes+i));
+                sprintf(hexBuf, "%02X", *(bytes+i));
                 flentiopAppendData(output, hexBuf, i+1 == bytesSize? strlen(hexBuf)+1 : strlen(hexBuf));
             }
         }
@@ -300,3 +300,34 @@ flEntity* flentstdToStrNew(flentXenv* xenv){
 
     return ent;
 }
+
+/*----------flentiopDTYPE_STR TO CONSOLE (Prints)----------------------------*/
+//---------------------------------------------------------------------------
+// static void  flentstdPrintsHscmd(flentsyc_t cmd, void *args, void* rvalDest){
+//     switch(cmd){
+//         case flentsycgetENT_NAME:
+//             *(char**)rvalDest = FLSTR("stdPrints");
+//         break;
+
+//         case flentsycgetIOPORT_NAME:{
+//             flentIOport* port = (flentIOport*)args;
+//             if(port->id == flentstdPRINTS_IN) *(char**)rvalDest = FLSTR("IN");
+//         }
+//         break;
+
+//         case flentsycgetENT_IOPORT_NTH_DTYPE:{
+//             flentsycEntIoportNthDtypeArg* arg = (flentsycEntIoportNthDtypeArg*)args;
+//             if(arg->port->id == flentstdTOSTR_OUT && arg->n == 0) 
+//                 *(flentiopDtype_t*)rvalDest = flentiopDTYPE_STR;
+//         }
+//         break;
+
+//         case flentsycgetENT_IOPORT_ACCEPT_DTYPE:{
+//             flentsycEntIoportAcceptDtypeArg* arg = (flentsycEntIoportAcceptDtypeArg*)args;
+//             if(arg->port->id == flentstdTOSTR_OUT){
+//                 if(arg->dtype == flentiopDTYPE_STR) *(bool*)rvalDest = true;
+//             }else *(bool*)rvalDest = true;
+//         }
+//         break;
+//     }
+// }

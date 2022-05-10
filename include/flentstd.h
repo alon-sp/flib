@@ -48,4 +48,7 @@ flEntity* flentstdToStrNew(flentXenv* xenv);
 #define flentstdTOSTR_IN  0
 #define flentstdTOSTR_OUT 1
 
+// flEntity* flentstdPrintsNew(flentXenv* xenv);
+// #define flentstdPRINTS_IN  0
+
 #endif

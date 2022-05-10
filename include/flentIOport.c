@@ -243,7 +243,7 @@ static bool _flentiopPerformDefaultPreWriteOps(flentIOport* iop, const char* cal
         flentiopDptr* dptr = *(flentiopDptr**)_flentiopObufGetData(iop);
         _flentiopDptrDecLsp(dptr);
         if(dptr->_lsp <= 0){
-            dptr->_donecb(dptr);
+            if(dptr->_donecb) dptr->_donecb(dptr);
         }
     }
     return true;

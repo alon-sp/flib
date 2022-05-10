@@ -145,6 +145,53 @@ static bool runFlentiopTypeMoTest(){
     return status;
 }
 
+static bool runFlentstdToStrTest(){
+    flentXenv* xenv = flentxevNew(1);
+    flEntity* toStrEnt = flentstdToStrNew(xenv);
+
+    flentIOport* dataInPort = flentiopNew(0, flentiopTYPE_OUTPUT, 0);
+    flentiopLink(dataInPort, flentFindPortByID(toStrEnt, flentstdTOSTR_IN, flentiopTYPE_INPUT));
+
+    flentIOport* toStrEntOutPort = flentFindPortByID(toStrEnt, flentstdTOSTR_OUT, flentiopTYPE_OUTPUT);
+
+    bool status;
+    //Convert a flentiopDTYPE_NUM type data to string
+    flnum_t num = 32.63459873f;
+    flentiopPut(dataInPort, flentiopDTYPE_NUM, &num, sizeof(num));
+    flentxevTick(xenv, 0, 0);
+    //check if result is as expected
+    char numStrBuf[25];
+    flnumToStr(numStrBuf, num);
+    status = flentiopGetOutputDataType(toStrEntOutPort) == flentiopDTYPE_STR &&
+            strcmp(numStrBuf, (const char*)flentiopGetOutputData(toStrEntOutPort)) == 0;
+
+    //Convert a flentiopDTYPE_DPTR type data to string
+    char* strData = "My very very very very very very very long Hello World Greeting Message";
+    char strHexData[ (strlen(strData)*2) + 1];
+    for(int i = 0; i<strlen(strData); i++){
+        char hexBuf[5];
+        sprintf(hexBuf, "%02X", *(strData+i));
+
+        strHexData[(i*2)+0] = hexBuf[0];
+        strHexData[(i*2)+1] = hexBuf[1];
+        if(i+1 == strlen(strData)) strHexData[(i*2)+2] = '\0';
+    }
+
+    flentiopDptr dptr = _flentiopDptrInit(NULL, strData, strlen(strData), NULL);
+    flentiopDptr* dp = &dptr;
+    flentiopPut(dataInPort, flentiopDTYPE_DPTR, &dp, sizeof(dp));
+    flentxevTick(xenv, 0, 0);
+    //check if result is as expected
+    status = status && strlen(strHexData) == strlen(strData)*2 &&
+            strlen(strHexData)+1 == flentiopGetOutputDataSize(toStrEntOutPort) &&
+            flentiopGetOutputDataType(toStrEntOutPort) == flentiopDTYPE_STR &&
+            strcmp(strHexData, (const char*)flentiopGetOutputData(toStrEntOutPort)) == 0;
+
+    flentiopFree(dataInPort);
+    flentxevFree(xenv, true);
+    return status;
+}
+
 bool _flentRunTests(){
 
     if(runPortReadAndWriteTest()){
@@ -169,6 +216,12 @@ bool _flentRunTests(){
         printf("\nrunFlentiopTypeMoTest: TEST OK");
     }else{
         flerrHandle("\nTESf _flentRunTests: Test Failed !1(runFlentiopTypeMoTest)");
+    }
+
+    if(runFlentstdToStrTest()){
+        printf("\nrunFlentstdToStrTest: TEST OK");
+    }else{
+        flerrHandle("\nTESf _flentRunTests: Test Failed !1(runFlentstdToStrTest)");
     }
 
     return true;
