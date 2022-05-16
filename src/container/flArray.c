@@ -204,6 +204,31 @@ void* flarrPuts(flArray* flarr, flint_t index, const void* dataBytesPtr, flint_t
 }
 
 /*----------STRING PROCESSING UTILS----------*/
+flArray* flarrstrNew(const char* str){
+    flArray* chArr = flarrstrNewc(strlen(str));
+    if(!chArr) return NULL;
+
+    flarrstrPush(chArr, str);
+
+    return chArr;
+}
+
+flArray* flarrstrNews(int argc, ...){
+    flArray* chArr = flarrstrNewc(0);
+    if(chArr) return NULL;
+
+    va_list ptr;
+    va_start(ptr, argc);
+    for(int i = 0; i<argc; i++){
+        const char* str = va_arg(ptr, const char*);
+        flarrPushs(chArr, str, strlen(str));
+    }
+    va_end(ptr);
+    flarrstrPush(chArr, "");
+
+    return chArr;
+}
+
 const char* flarrstrPush(flArray* chArr, const char* strv){
 
     flarrPushs(chArr, strv, strlen(strv)+1/*include null char*/);
@@ -233,5 +258,7 @@ char flarrstrPop(flArray* chArr){
 }
 
 const char* flarrstrCstr(flArray* chArr){
+    if(!chArr) return NULL;
+    
     return _flarrstrCstr(chArr);
 }

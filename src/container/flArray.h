@@ -192,6 +192,13 @@ void* flarrPuts(flArray* flarr, flint_t index, const void* dataBytesPtr, flint_t
 #define _flarrPuts(flarr, index, dataBytesPtr, elemCount) memcpy( _flarrGet(flarr, index), dataBytesPtr, elemCount*flarr->elemSize )
 
 /*----------STRING PROCESSING UTILS----------*/
+
+#define flarrstrNewc(initialStrLen) flarrNew(initialStrLen, sizeof(char))
+
+flArray* flarrstrNew(const char* str);
+
+flArray* flarrstrNews(int argc, ...);
+
 /**
  * @brief Assume $chArr is a character array and append $strv to this array
  * beginning at $chArr->length. 
