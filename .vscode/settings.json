@@ -6,6 +6,15 @@
         "flentxenv.h": "c",
         "flentity.h": "c",
         "flerror.h": "c",
-        "flentioport.h": "c"
+        "flentioport.h": "c",
+        "cstdio": "c",
+        "_flfil.h": "c",
+        "glew.h": "c",
+        "glu.h": "c",
+        "gl.h": "c",
+        "sdl.h": "c",
+        "fltypes.h": "c",
+        "flentiopdtype.h": "c",
+        "flentstd.h": "c"
     }
 }

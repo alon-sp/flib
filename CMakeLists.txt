@@ -13,10 +13,13 @@ include_directories(${SDL2_INCLUDE_DIRS})
 set(FLIB_SRC_HOME "${PROJECT_SOURCE_DIR}/src")
 
 set(FLIB_INCLUDE_DIRS
+    "${PROJECT_SOURCE_DIR}/extlib"
+    "${PROJECT_SOURCE_DIR}/extlib/glew"
     "${FLIB_SRC_HOME}/com"
     "${FLIB_SRC_HOME}/util"
     "${FLIB_SRC_HOME}/entity"
     "${FLIB_SRC_HOME}/container"
+    "${FLIB_SRC_HOME}/file"
     "${FLIB_SRC_HOME}/gl"
 )
 
@@ -32,5 +35,7 @@ add_library(flib
     ${FLIB_SRC_HOME}/entity/flentIOport.c
     ${FLIB_SRC_HOME}/entity/flentXenv.c
     ${FLIB_SRC_HOME}/entity/flentstd.c
+    ${FLIB_SRC_HOME}/file/flfi.c
+    ${FLIB_SRC_HOME}/gl/flgl.c
 )
-target_link_libraries(flib PUBLIC ${SDL2_LIBRARIES} PUBLIC m)
+target_link_libraries(flib PUBLIC ${SDL2_LIBRARIES} PUBLIC m GL GLU GLEW)

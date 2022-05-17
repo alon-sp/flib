@@ -4,9 +4,8 @@
 #include<stdio.h> //for sprintf
 #include<string.h>
 
-#include"flConstants.h"
-#include"flTypes.h"
-#include"flArray.h"
+#include"fl.h"
+#include"flentConstants.h"
 #include"flentIOport.h"
 
 typedef void  (*flentTick_tf)(flEntity* self, flentXenv* xenv);

@@ -6,6 +6,7 @@
 
 #include"_flArray.h"
 #include"./entity/_flEntity.h"
+#include"_flfil.h"
 
 void onError(const char* errLog){
     printf("%s", errLog);
@@ -23,6 +24,11 @@ int main(int argc, char** argv){
     printf("\nRunning flEntity tests\n----------");
     if(_flentRunTests()){
         printf("\n$_flentRunTests: TEST OK\n");
+    }
+
+    printf("\nRunning flfil tests\n----------");
+    if(_flfiRunTests()){
+        printf("\n$_flfiRunTests: TEST OK\n");
     }
 
     printf("\n\n-----TotalFlmemMallocCalls: %u", flmemGetTotalFlmemMallocCalls());

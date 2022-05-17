@@ -29,6 +29,13 @@ flArray* flarrNew(flint_t initialCapacity, flint_t sizeOfDatatype);
 
 void flarrFree(flArray* flarr);
 
+#define flarrPfree(flarrPP) do{\
+    if((flarrPP) && *(flarrPP)){\
+        flarrFree(*(flarrPP));\
+        *(flarrPP) = NULL;\
+    }\
+}while(0)
+
 /**
  * @brief Resize the internal data buffer of $flarr to $flarr->elemSize * $newCapacity
  * @note if memory could not be allocated for the new capacity, $flarr remains

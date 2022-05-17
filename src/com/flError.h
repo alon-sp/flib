@@ -2,6 +2,7 @@
 #define FLERRORHEADERH_INCLUDED
 
 #include"flConstants.h"
+#include"stddef.h"
 
 void flerrSetCallback(void (*errorCallback)(const char*));
 
