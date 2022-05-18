@@ -215,7 +215,7 @@ flArray* flarrstrNew(const char* str){
 
 flArray* flarrstrNews(int argc, ...){
     flArray* chArr = flarrstrNewc(0);
-    if(chArr) return NULL;
+    if(!chArr) return NULL;
 
     va_list ptr;
     va_start(ptr, argc);
