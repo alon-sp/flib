@@ -26,6 +26,7 @@ set(FLIB_INCLUDE_DIRS
 include_directories( ${FLIB_INCLUDE_DIRS} )
 
 add_subdirectory( "${PROJECT_SOURCE_DIR}/_test/" )
+add_subdirectory( "${PROJECT_SOURCE_DIR}/_testProg/glRect" )
 
 add_compile_definitions(_FLIB_DEBUG_)
 
@@ -37,5 +38,6 @@ add_library(flib
     ${FLIB_SRC_HOME}/entity/flentstd.c
     ${FLIB_SRC_HOME}/file/flfi.c
     ${FLIB_SRC_HOME}/gl/flgl.c
+    ${FLIB_SRC_HOME}/util/fluti.c
 )
 target_link_libraries(flib PUBLIC ${SDL2_LIBRARIES} PUBLIC m GL GLU GLEW)

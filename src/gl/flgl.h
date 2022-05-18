@@ -1,5 +1,5 @@
-#ifndef FLHEADERH_INCLUDED
-#define FLHEADERH_INCLUDED
+#ifndef FLGLHEADERH_INCLUDED
+#define FLGLHEADERH_INCLUDED
 
 /*=======C STD LIBS=======*/
 #include<stdbool.h>
@@ -8,10 +8,6 @@
 #include <GL/glew.h>
 #include <GL/glu.h>
 #include <GL/gl.h>
-
-/*=======SDL2=======*/
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
 
 #include"flArray.h"
 #include"fllog.h"
@@ -61,5 +57,7 @@ GLuint flglpgCreateFromSrc(const char* vertexShaderSrc, const char* fragShaderSr
 GLuint flglpgCreateFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD);
 
 flLog* flglpgGetInfolog(GLuint program);
+
+GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenum usage);
 
 #endif

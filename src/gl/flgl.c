@@ -156,3 +156,13 @@ flLog* flglpgGetInfolog(GLuint program){
     
     return fllogNew(infolog);
 }
+
+GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenum usage){
+    GLuint bufferID;
+    glGenBuffers(1, &bufferID);
+    glBindBuffer(target, bufferID);
+    glBufferData(target, dataSize, data, usage);
+    glBindBuffer(target, 0);
+
+    return bufferID;
+}
