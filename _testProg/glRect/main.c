@@ -55,7 +55,7 @@ bool glpInit(){
     //Create and compile the vertex shader and fragment shader and link both to create the shader program
     //-------------------------------------------------------------------------------------------
     flLog* errlog;
-    rectProgGL = flglpgCreateFromFile(vsPathGL, fsPathGL, &errlog);
+    rectProgGL = flglCreateProgramFromFile(vsPathGL, fsPathGL, &errlog);
     if(!rectProgGL){
         printf("%s", fllogStr(errlog));
         fllogPfree(&errlog);
@@ -125,5 +125,8 @@ void glpRender(){
 }
 
 void glpCleanup(){
-    if(rectProgGL) glDeleteProgram(rectProgGL);
+    if(rectProgGL){
+        glDeleteProgram(rectProgGL);
+        rectProgGL = 0;
+    }
 }

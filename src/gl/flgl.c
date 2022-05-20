@@ -1,6 +1,9 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include"stb_image.h"
+
 #include"flgl.h"
 
-GLuint flglshCreateAndCompile(GLuint shaderType, const GLchar* shaderSrc, flLog** errlogPD){
+GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, flLog** errlogPD){
     GLuint shader = glCreateShader(shaderType);
     if(!shader){
         if(errlogPD) *errlogPD = fllogNew("Failed to create shader object");
@@ -15,7 +18,7 @@ GLuint flglshCreateAndCompile(GLuint shaderType, const GLchar* shaderSrc, flLog*
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
 
     if(compileStatus != GL_TRUE){
-        if(errlogPD) *errlogPD = flglshGetInfolog(shader);
+        if(errlogPD) *errlogPD = flglGetShaderInfolog(shader);
         glDeleteShader(shader);
 
         return 0;
@@ -24,7 +27,7 @@ GLuint flglshCreateAndCompile(GLuint shaderType, const GLchar* shaderSrc, flLog*
     return shader;
 }
 
-flLog* flglshGetInfolog(GLuint shader){
+flLog* flglGetShaderInfolog(GLuint shader){
     GLchar infolog[512];
     int infologLength;
     glGetShaderInfoLog(shader, 512-1, &infologLength, infolog);
@@ -33,7 +36,7 @@ flLog* flglshGetInfolog(GLuint shader){
     return fllogNew(infolog);
 }
 
-bool flglpgLink(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool deleteShaders, flLog** errlogPD){
+bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool deleteShaders, flLog** errlogPD){
     if(!(shaderProgram && vshader && fshader)) return false;
 
     glAttachShader(shaderProgram, vshader);
@@ -49,20 +52,20 @@ bool flglpgLink(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool delet
     }
 
     if(linkStatus != GL_TRUE){
-        if(errlogPD) *errlogPD = flglpgGetInfolog(shaderProgram);
+        if(errlogPD) *errlogPD = flglGetProgramInfolog(shaderProgram);
         return false;
     }
 
     return true;
 }
 
-GLuint flglpgCreateFromSrc(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD){
+GLuint flglCreateProgramFromSrc(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD){
     flLog* errlog = fllogNew("");
 
     GLuint progGL = 0;
     //Create and compile the vertex shader
     flLog* vertexShaderLog = NULL;
-    GLuint vertexShader = flglshCreateAndCompile(GL_VERTEX_SHADER, vertexShaderSrc, &vertexShaderLog);
+    GLuint vertexShader = flglCreateAndCompileShader(GL_VERTEX_SHADER, vertexShaderSrc, &vertexShaderLog);
     if(!vertexShader){
         fllogPushs(errlog, 2, "\n\nvertex shader\n", fllogStr(vertexShaderLog));
         fllogPfree(&vertexShaderLog);
@@ -70,7 +73,7 @@ GLuint flglpgCreateFromSrc(const char* vertexShaderSrc, const char* fragShaderSr
 
     //Create and compile the fragment shader
     flLog* fragShaderLog = NULL;
-    GLuint fragShader = flglshCreateAndCompile(GL_FRAGMENT_SHADER, fragShaderSrc, &fragShaderLog);
+    GLuint fragShader = flglCreateAndCompileShader(GL_FRAGMENT_SHADER, fragShaderSrc, &fragShaderLog);
     if(!fragShader){
         fllogPushs(errlog, 2, "\n\nfragment shader\n", fllogStr(fragShaderLog));
         fllogPfree(&fragShaderLog);
@@ -81,7 +84,7 @@ GLuint flglpgCreateFromSrc(const char* vertexShaderSrc, const char* fragShaderSr
         progGL = glCreateProgram();
         if(progGL){
             flLog* progLog = NULL;
-            if(!flglpgLink(progGL, vertexShader, fragShader, false, &progLog)){
+            if(!flglLinkProgram(progGL, vertexShader, fragShader, false, &progLog)){
                 fllogPushs(errlog, 2, "\n\n", fllogStr(progLog));
                 fllogPfree(&progLog);
             }
@@ -108,7 +111,7 @@ GLuint flglpgCreateFromSrc(const char* vertexShaderSrc, const char* fragShaderSr
     return progGL;
 }
 
-GLuint flglpgCreateFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD){
+GLuint flglCreateProgramFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD){
     flLog* errlog = fllogNew("");
     GLuint progGL = 0;
 
@@ -128,7 +131,7 @@ GLuint flglpgCreateFromFile(const char* vertexShaderPath, const char* fragShader
 
     if(vertexShaderSrc && fragShaderSrc){
         flLog* progLog = NULL;
-        progGL = flglpgCreateFromSrc(vertexShaderSrc, fragShaderSrc, &progLog);
+        progGL = flglCreateProgramFromSrc(vertexShaderSrc, fragShaderSrc, &progLog);
         if(!progGL){
             fllogPush(errlog, fllogStr(progLog));
             fllogPfree(&progLog);
@@ -148,7 +151,7 @@ GLuint flglpgCreateFromFile(const char* vertexShaderPath, const char* fragShader
     return progGL;
 }
 
-flLog* flglpgGetInfolog(GLuint program){
+flLog* flglGetProgramInfolog(GLuint program){
     GLchar infolog[512];
     int infologLength;
     glGetProgramInfoLog(program, 512-1, &infologLength, infolog);
@@ -165,4 +168,45 @@ GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenu
     glBindBuffer(target, 0);
 
     return bufferID;
+}
+
+GLuint flglGenTexture(const uint8_t* data, int width, int height, uint8_t nChannels){
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    //Set the texture wrapping/filtering options
+    //------------------------------------------
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //load texture data
+    //------------------
+    GLuint format = GL_RGB;
+    if(nChannels == 4) format = GL_RGBA;
+    else if(nChannels == 1) format = GL_RED;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return textureID;
+}
+
+GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD){
+    GLuint textureID = 0;
+    int width, height, nChannels;
+    stbi_set_flip_vertically_on_load(true);
+    stbi_uc *data = stbi_load(filePath, &width, &height, &nChannels, 0);
+    stbi_set_flip_vertically_on_load(false);
+
+    if(data){
+        textureID = flglGenTexture(data, width, height, nChannels);
+        stbi_image_free(data);
+        data = NULL;
+    }else{
+        if(errlogPD) *errlogPD = fllogNews(2, "Failed to load image: ", filePath);
+    }
+
+    return textureID;
 }

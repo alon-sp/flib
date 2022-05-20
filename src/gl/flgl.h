@@ -21,9 +21,9 @@
  * during error condition
  * @return non-zero value representing the id of the created shader object | zero otherwise
  */
-GLuint flglshCreateAndCompile(GLuint shaderType, const GLchar* shaderSrc, flLog** errlogPD);
+GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, flLog** errlogPD);
 
-flLog* flglshGetInfolog(GLuint shader);
+flLog* flglGetShaderInfolog(GLuint shader);
 
 /**
  * @note this function does nothing if any of it's parameter evaluates to false.
@@ -35,7 +35,7 @@ flLog* flglshGetInfolog(GLuint shader);
  * during error condition
  * @return true if no error occur during linking | false otherwise. 
  */
-bool flglpgLink(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool deleteShaders, flLog** errlogPD);
+bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool deleteShaders, flLog** errlogPD);
 
 /**
  * @brief Create the openGL program object from source string and perform all neccessary cleanup operations
@@ -44,7 +44,7 @@ bool flglpgLink(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool delet
  * @param errlogPD
  * @return The id of the openGL program object which will be 0(zero) if any error occur.
  */
-GLuint flglpgCreateFromSrc(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD);
+GLuint flglCreateProgramFromSrc(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD);
 
 /**
  * @brief Create the openGL program object from source file and perform all neccessary cleanup operations
@@ -54,10 +54,14 @@ GLuint flglpgCreateFromSrc(const char* vertexShaderSrc, const char* fragShaderSr
  * @param errlogPD 
  * @return The id of the openGL program object which will be 0(zero) if any error occur.
  */
-GLuint flglpgCreateFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD);
+GLuint flglCreateProgramFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD);
 
-flLog* flglpgGetInfolog(GLuint program);
+flLog* flglGetProgramInfolog(GLuint program);
 
 GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenum usage);
+
+GLuint flglGenTexture(const uint8_t* data, int width, int height, uint8_t nChannels);
+
+GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD);
 
 #endif
