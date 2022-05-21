@@ -15,6 +15,9 @@
         "sdl.h": "c",
         "fltypes.h": "c",
         "flentiopdtype.h": "c",
-        "flentstd.h": "c"
+        "flentstd.h": "c",
+        "raymath.h": "c",
+        "flfi.h": "c",
+        "fllog.h": "c"
     }
 }

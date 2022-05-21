@@ -9,6 +9,9 @@
 #include <GL/glu.h>
 #include <GL/gl.h>
 
+/*=======STB IMAGE======*/
+#include"stb_image.h"
+
 #include"flArray.h"
 #include"fllog.h"
 #include"flfi.h"
@@ -63,5 +66,6 @@ GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenu
 GLuint flglGenTexture(const uint8_t* data, int width, int height, uint8_t nChannels);
 
 GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD);
+
 
 #endif

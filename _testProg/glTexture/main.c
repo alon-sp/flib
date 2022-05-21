@@ -2,6 +2,8 @@
 #include"flgl.h"
 #include"fluti.h"
 
+#include"flgm.h"
+
 static SDL_Window* glpWindow = NULL;
 static int glpWindowWidth = 0, glpWindowHeight = 0;
 static SDL_GLContext glpContext = NULL;
@@ -133,6 +135,8 @@ bool glpInit(){
 
     //Set up default color for clearing the screen
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    //glViewport(0, 0, glpWindowWidth, glpWindowHeight);
 
     return true;
 }

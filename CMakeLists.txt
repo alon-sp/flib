@@ -21,6 +21,8 @@ set(FLIB_INCLUDE_DIRS
     "${FLIB_SRC_HOME}/container"
     "${FLIB_SRC_HOME}/file"
     "${FLIB_SRC_HOME}/gl"
+    "${FLIB_SRC_HOME}/geom"
+    "${FLIB_SRC_HOME}/math"
 )
 
 include_directories( ${FLIB_INCLUDE_DIRS} )
@@ -40,5 +42,7 @@ add_library(flib
     ${FLIB_SRC_HOME}/file/flfi.c
     ${FLIB_SRC_HOME}/gl/flgl.c
     ${FLIB_SRC_HOME}/util/fluti.c
+    ${FLIB_SRC_HOME}/geom/flgm.c
+    ${FLIB_SRC_HOME}/math/flm.c
 )
 target_link_libraries(flib PUBLIC ${SDL2_LIBRARIES} PUBLIC m GL GLU GLEW)
