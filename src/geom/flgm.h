@@ -2,27 +2,22 @@
 #define FLGMHEADERH_INCLUDED
 
 #include<stdint.h>
+#include<string.h>
 #include"flm.h"
 #include"flgl.h"
 
 typedef struct flgmBmeshMat flgmBmeshMat;
 struct flgmBmeshMat{
     uint diffTexID;
-    uint diffTexLoc;
-
-    uint specTexID;
-    uint specTexLoc;
-    
-    float shininess;
+    uint specTexID;   
+    int shine;
 };
-#define flgmBmeshMatInit() {.diffTexID = 0, diffTexLoc = 0, specTexID = 0, specTexLoc};
+#define flgmBmeshMatInit() { .diffTexID = 0, .specTexID = 0, .shine = -1 };
 
-flgmBmeshMat flgmBmeshMatNew(uint shaderProgram, uint diffTexID, uint specTexID, float shininess);
-
-#define flgmVTXD_POS       1
-#define flgmVTXD_NORM      2
-#define flgmVTXD_TEXCOORD  64
-#define flgmVTXD_CLR       128
+#define flgmVTXD_POS       ( (uint8_t)1  )
+#define flgmVTXD_NORM      ( (uint8_t)2  )
+#define flgmVTXD_TEXCOORD  ( (uint8_t)64 )
+#define flgmVTXD_CLR       ( (uint8_t)128 )
 
 typedef struct flgmBmesh flgmBmesh;
 struct flgmBmesh{
@@ -34,41 +29,58 @@ struct flgmBmesh{
      * and so on.
      */
     const float* const vtxd;
-    #define _flgmBmeshGetVtxd(bmesh) ( (float*)(bmesh)->vtxd )
+    #define _flgmBmeshGetVtxd(bm) ( (float*)(bm)->vtxd )
     const uint vtxdLen;
     const uint8_t vtxdFlags;
-    #define _flgmBmeshSetVtxd(bmesh, vertexData, vertexDataLen, flags) do{\
-        *( (float**)&(bmesh)->vtxd ) = (vertexData);\
-        *( (uint*)&(bmesh)->vtxdLen ) = (vertexDataLen);\
-        *( (uint8_t*)&(bmesh)->vtxdFlags ) = (flags);\
+    #define _flgmBmeshSetVtxd(bm, vertexData, vertexDataLen, flags) do{\
+        *( (float**)&(bm)->vtxd ) = (float*)(vertexData);\
+        *( (uint*)&(bm)->vtxdLen ) = (vertexDataLen);\
+        *( (uint8_t*)&(bm)->vtxdFlags ) = (flags);\
     }while(0)
 
-    const uint* const indices;
-    #define _flgmBmeshGetIndices(bmesh) ( (uint*)(bmesh)->indices )
-    const uint indicesLen;
-    #define _flgmBmeshSetIndices(bmesh, _indices, _indicesLen) do{\
-        *( (uint**)&(bmesh)->indices ) = (_indices);\
-        *( (uint*)&(bmesh)->indicesLen ) = (_indicesLen);\
+    const uint* const indexes;
+    #define _flgmBmeshGetIndexes(bm) ( (uint*)(bm)->indexes )
+    const uint indexesLen;
+    #define _flgmBmeshSetIndexes(bm, _indexes, _indexesLen) do{\
+        *( (uint**)&(bm)->indexes ) = (uint*)(_indexes);\
+        *( (uint*)&(bm)->indexesLen ) = (_indexesLen);\
     }while(0)
+
+    const float16* transform_;//The underscore implies the memory associated with this pointer
+                            //is not managed by this module.
+    #define _flgmBmeshSetTransform(bm, transf)\
+        (  *( (float16**)&(bm)->transform_ ) = (float16*)(transf)  )
+
+    const float16* const _transformBuf;
+    #define _flgmBmeshSetTransformBuf(bm, transfBuf) \
+        (  *( (float16**)&(bm)->_transformBuf ) = (float16*)(transfBuf)  )
+
 
     flgmBmeshMat mat;
 
     const uint vboID;
-    #define flgmBmeshSetVboID(bmesh, _vboID) ( *( (uint*)&(bmesh)->vboID ) = (_vboID) )
+    #define flgmBmeshSetVboID(bm, _vboID) ( *( (uint*)&(bm)->vboID ) = (_vboID) )
 
     const uint iboID;
-    #define flgmBmeshSetIboID(bmesh, _iboID) ( *( (uint*)&(bmesh)->iboID ) = (_iboID) )
+    #define flgmBmeshSetIboID(bm, _iboID) ( *( (uint*)&(bm)->iboID ) = (_iboID) )
 
     const uint vaoID;
-    #define flgmBmeshSetVaoID(bmesh, _vaoID) ( *( (uint*)&(bmesh)->vaoID ) = (_vaoID) )
+    #define flgmBmeshSetVaoID(bm, _vaoID) ( *( (uint*)&(bm)->vaoID ) = (_vaoID) )
 
 };
 
-flgmBmesh* flgmBmeshNew(const float* vertexData, const uint vetexDataLen, 
-                       const uint* indices, const uint indicesLen, bool computeNormal, uint8_t vtxdFlags);
+flgmBmesh* flgmBmeshNew(  float* vertexData, const uint vertexDataLen, 
+    const uint* indexes, const uint indexesLen, uint8_t vtxdFlags, bool saveData  );
 
-void flgmBmeshDraw(flgmBmesh* bmesh);
+void flgmBmeshFree(flgmBmesh* bm);
 
-//void flgmBmeshComputeVertexNormals(flgmBmesh* bmesh);
+void flgmBmeshSetTransform(flgmBmesh* bm, float16* transform, bool saveCopy);
 
+void flgmBmeshDraw(flgmBmesh* mesh, flglShaderProgram shaderProgram);
+
+//void flgmBmeshComputeVertexNormals(flgmBmesh* mesh);
+
+void* flgmComputeVertexNormal(
+    const float* vtxs, uint vtxsStride, float* normDest, uint normDestStride, 
+    const uint* indexes, uint indexesLen  );
 #endif

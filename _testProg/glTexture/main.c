@@ -34,6 +34,10 @@ int main(int argc, const char** argv){
         SDL_GL_SwapWindow(glpWindow);
     }
 
+    // float tmp[3] = {0.1, 0.2, 0.3};
+    // Vector3 tmpS = *(Vector3*)tmp;
+    // printf("\ntmps: %f, %f, %f", tmpS.x, tmpS.y, tmpS.z);
+
     //Perform cleanup operations
     //--------------------------
 
@@ -86,9 +90,9 @@ bool glpInit(){
 
     //Retrieve attribute locations
     //----------------------------
-    GLuint alVtxPosGL = glGetAttribLocation(progGL, "aVtxPos");
-    GLuint alVtxClrGL = glGetAttribLocation(progGL, "aVtxClr");
-    GLuint alVtxTexCoordGL = glGetAttribLocation(progGL, "aVtxTexCoord");
+    GLint alVtxPosGL = glGetAttribLocation(progGL, "aVtxPos");
+    GLint alVtxClrGL = glGetAttribLocation(progGL, "aVtxClr");
+    GLint alVtxTexCoordGL = glGetAttribLocation(progGL, "aVtxTexCoord");
 
     //Set up openGL buffers
     //---------------------

@@ -16,6 +16,21 @@
 #include"fllog.h"
 #include"flfi.h"
 
+//Default shader attribute locations that are binded during linking program.
+#define FLGL_ATTRIBLOC_VTXPOS        0
+#define FLGL_ATTRIBLOC_VTXNORM       1
+#define FLGL_ATTRIBLOC_VTXTEXCOORD   2
+#define FLGL_ATTRIBLOC_VTXCLR        3
+
+#define FLGL_UNIFORM_NAME_MODEL      "uModel"
+#define FLGL_UNIFORM_NAME_VIEW       "uView"
+#define FLGL_UNIFORM_NAME_PROJ       "uProj"
+#define FLGL_UNIFORM_NAME_MATDIFF    "uMat.diff"
+#define FLGL_UNIFORM_NAME_MATSPEC    "uMat.spec"
+#define FLGL_UNIFORM_NAME_MATSHINE   "uMat.shine"
+
+/*=========Shader==========*/
+//-------------------------
 /**
  * 
  * @param shaderType 
@@ -27,6 +42,9 @@
 GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, flLog** errlogPD);
 
 flLog* flglGetShaderInfolog(GLuint shader);
+
+/*=========Program==========*/
+//-------------------------
 
 /**
  * @note this function does nothing if any of it's parameter evaluates to false.
@@ -61,11 +79,31 @@ GLuint flglCreateProgramFromFile(const char* vertexShaderPath, const char* fragS
 
 flLog* flglGetProgramInfolog(GLuint program);
 
+/*==========flglShaderProgram==========*/
+//-------------------------------------
+typedef struct flglShaderProgram flglShaderProgram;
+struct flglShaderProgram{
+    GLuint id;
+    GLint ulModel, ulView, ulProj; //ul -> uniform location
+    GLint ulMatDiff, ulMatSpec, ulMatShine;
+};
+#define flglShaderProgramInit() {  .id = 0, .ulModel = -1, .ulView = -1, .ulProj = -1,\
+    .ulMatDiff = -1, .ulMatSpec = -1, .ulMatShine = -1  }
+
+flglShaderProgram flglShaderProgramNew(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD);
+
+flglShaderProgram flglShaderProgramNewFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD);
+
+/*==========Buffer==========*/
+//----------------------------
 GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenum usage);
 
+/*==========Texture==========*/
+//----------------------------
 GLuint flglGenTexture(const uint8_t* data, int width, int height, uint8_t nChannels);
 
 GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD);
 
+const char* flglGetError();
 
 #endif

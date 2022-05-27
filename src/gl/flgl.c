@@ -38,6 +38,12 @@ flLog* flglGetShaderInfolog(GLuint shader){
 bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool deleteShaders, flLog** errlogPD){
     if(!(shaderProgram && vshader && fshader)) return false;
 
+    //Bind default attribute locations
+    glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXPOS, "vtxPos");
+    glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXNORM, "vtxNorm");
+    glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXTEXCOORD, "vtxTexCoord");
+    glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXCLR, "vtxClr");
+
     glAttachShader(shaderProgram, vshader);
     glAttachShader(shaderProgram, fshader);
     glLinkProgram(shaderProgram);
@@ -159,6 +165,38 @@ flLog* flglGetProgramInfolog(GLuint program){
     return fllogNew(infolog);
 }
 
+static void flglShaderProgramSetupUniforms(flglShaderProgram* sp){
+    //Query default uniform locations
+    sp->ulModel = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MODEL);
+    sp->ulView = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_VIEW);
+    sp->ulProj = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_PROJ);
+    sp->ulMatDiff = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATDIFF);
+    sp->ulMatSpec = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSPEC);
+    sp->ulMatShine = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSHINE);
+}
+
+flglShaderProgram flglShaderProgramNew(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD){
+    flglShaderProgram sp = flglShaderProgramInit();
+    GLuint progGL = flglCreateProgramFromSrc(vertexShaderSrc, fragShaderSrc, errlogPD);
+    if(progGL){
+        sp.id = progGL;
+        //Setup default uniforms
+        flglShaderProgramSetupUniforms(&sp);
+    }
+    return sp;
+}
+
+flglShaderProgram flglShaderProgramNewFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD){
+    flglShaderProgram sp = flglShaderProgramInit();
+    GLuint progGL = flglCreateProgramFromFile(vertexShaderPath, fragShaderPath, errlogPD);
+    if(progGL){
+        sp.id = progGL;
+        //Setup default uniforms
+        flglShaderProgramSetupUniforms(&sp);
+    }
+    return sp;
+}
+
 GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenum usage){
     GLuint bufferID;
     glGenBuffers(1, &bufferID);
@@ -208,4 +246,26 @@ GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD){
     }
 
     return textureID;
+}
+
+const char* flglGetError(){
+    GLenum errcode;
+    switch(errcode = glGetError()){
+        case GL_INVALID_ENUM:
+            return "GL_INVALID_ENUM";
+        case GL_INVALID_VALUE:
+            return "GL_INVALID_VALUE";
+        case GL_INVALID_OPERATION:
+            return "GL_INVALID_OPERATION";
+        case GL_STACK_OVERFLOW:
+            return "GL_STACK_OVERFLOW";
+        case GL_STACK_UNDERFLOW:
+            return "GL_STACK_UNDERFLOW";
+        case GL_OUT_OF_MEMORY:
+            return "GL_OUT_OF_MEMORY";
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            return "GL_INVALID_FRAMEBUFFER_OPERATION";
+    }
+
+    return errcode == GL_NO_ERROR? NULL : "";
 }
