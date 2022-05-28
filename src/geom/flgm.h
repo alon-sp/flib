@@ -6,21 +6,28 @@
 #include"flm.h"
 #include"flgl.h"
 
-typedef struct flgmBmeshMat flgmBmeshMat;
-struct flgmBmeshMat{
-    uint diffTexID;
-    uint specTexID;   
-    int shine;
+/*========================================Basic Mesh========================================*/
+//-------------------------------------------------------------------------------------------
+
+typedef struct flgmbmMat flgmbmMat;
+struct flgmbmMat{
+    GLuint diffTexID;
+    GLuint specTexID;   
+    GLint shine;
 };
-#define flgmBmeshMatInit() { .diffTexID = 0, .specTexID = 0, .shine = -1 };
+#define flgmbmMatInit() { .diffTexID = 0, .specTexID = 0, .shine = -1 };
 
-#define flgmVTXD_POS       ( (uint8_t)1  )
-#define flgmVTXD_NORM      ( (uint8_t)2  )
-#define flgmVTXD_TEXCOORD  ( (uint8_t)64 )
-#define flgmVTXD_CLR       ( (uint8_t)128 )
+#define flgmbmVTXD_POS       ( (uint8_t)1  )
+#define flgmbmVTXD_NORM      ( (uint8_t)2  )
+#define flgmbmVTXD_TEXCOORD  ( (uint8_t)64 )
+#define flgmbmVTXD_CLR       ( (uint8_t)128 )
 
-typedef struct flgmBmesh flgmBmesh;
-struct flgmBmesh{
+#define flgmbmTYPE_NIL         0
+#define flgmbmTYPE_RECTANGLE   1
+#define flgmbmTYPE_CUBE        2
+
+typedef struct flgmBasicMesh flgmBasicMesh;
+struct flgmBasicMesh{
     /**
      * @brief An array of vertex data: [Position, normal, texture coordinate and color, ...]
      * The flag associated with each data provided must be set in the $.vtxdFlags
@@ -28,59 +35,80 @@ struct flgmBmesh{
      * position data must come before normal data, normal data must come before texture coordinate,
      * and so on.
      */
-    const float* const vtxd;
-    #define _flgmBmeshGetVtxd(bm) ( (float*)(bm)->vtxd )
-    const uint vtxdLen;
+    const GLfloat* const vtxd;
+    #define _flgmbmGetVtxd(bm) ( (GLfloat*)(bm)->vtxd )
+    const GLuint vtxdLen;
     const uint8_t vtxdFlags;
-    #define _flgmBmeshSetVtxd(bm, vertexData, vertexDataLen, flags) do{\
-        *( (float**)&(bm)->vtxd ) = (float*)(vertexData);\
-        *( (uint*)&(bm)->vtxdLen ) = (vertexDataLen);\
+    #define _flgmbmSetVtxd(bm, vertexData, vertexDataLen, flags) do{\
+        *( (GLfloat**)&(bm)->vtxd ) = (GLfloat*)(vertexData);\
+        *( (GLuint*)&(bm)->vtxdLen ) = (vertexDataLen);\
         *( (uint8_t*)&(bm)->vtxdFlags ) = (flags);\
     }while(0)
 
-    const uint* const indexes;
-    #define _flgmBmeshGetIndexes(bm) ( (uint*)(bm)->indexes )
-    const uint indexesLen;
-    #define _flgmBmeshSetIndexes(bm, _indexes, _indexesLen) do{\
-        *( (uint**)&(bm)->indexes ) = (uint*)(_indexes);\
-        *( (uint*)&(bm)->indexesLen ) = (_indexesLen);\
+    const GLuint* const indexes;
+    #define _flgmbmGetIndexes(bm) ( (GLuint*)(bm)->indexes )
+    const GLuint indexesLen;
+    #define _flgmbmSetIndexes(bm, _indexes, _indexesLen) do{\
+        *( (GLuint**)&(bm)->indexes ) = (GLuint*)(_indexes);\
+        *( (GLuint*)&(bm)->indexesLen ) = (_indexesLen);\
     }while(0)
 
     const float16* transform_;//The underscore implies the memory associated with this pointer
                             //is not managed by this module.
-    #define _flgmBmeshSetTransform(bm, transf)\
+    #define _flgmbmSetTransform(bm, transf)\
         (  *( (float16**)&(bm)->transform_ ) = (float16*)(transf)  )
 
     const float16* const _transformBuf;
-    #define _flgmBmeshSetTransformBuf(bm, transfBuf) \
+    #define _flgmbmSetTransformBuf(bm, transfBuf) \
         (  *( (float16**)&(bm)->_transformBuf ) = (float16*)(transfBuf)  )
 
+    const GLint type;//The type of mesh: any of flgmbmTYPE_* constants
+    #define _flgmbmSetType(bm, _type) (  *( (GLint*)&(bm)->type ) = (_type)  )
 
-    flgmBmeshMat mat;
 
-    const uint vboID;
-    #define flgmBmeshSetVboID(bm, _vboID) ( *( (uint*)&(bm)->vboID ) = (_vboID) )
+    flgmbmMat mat;
 
-    const uint iboID;
-    #define flgmBmeshSetIboID(bm, _iboID) ( *( (uint*)&(bm)->iboID ) = (_iboID) )
+    const GLuint vboID;
+    #define flgmbmSetVboID(bm, _vboID) ( *( (GLuint*)&(bm)->vboID ) = (_vboID) )
 
-    const uint vaoID;
-    #define flgmBmeshSetVaoID(bm, _vaoID) ( *( (uint*)&(bm)->vaoID ) = (_vaoID) )
+    const GLuint iboID;
+    #define flgmbmSetIboID(bm, _iboID) ( *( (GLuint*)&(bm)->iboID ) = (_iboID) )
+
+    const GLuint vaoID;
+    #define flgmbmSetVaoID(bm, _vaoID) ( *( (GLuint*)&(bm)->vaoID ) = (_vaoID) )
 
 };
 
-flgmBmesh* flgmBmeshNew(  float* vertexData, const uint vertexDataLen, 
-    const uint* indexes, const uint indexesLen, uint8_t vtxdFlags, bool saveData  );
+flgmBasicMesh* flgmbmNewBU(  GLfloat* vertexData, const GLuint vertexDataLen, const GLuint* indexes, 
+        const GLuint indexesLen, uint8_t vtxdFlags, bool saveData, GLenum vboUsage,
+        GLenum iboUsage);
 
-void flgmBmeshFree(flgmBmesh* bm);
+#define flgmbmNew(vertexData, vertexDataLen, indexes, indexesLen, vtxdFlags, saveData)\
+    flgmbmNewBU(  vertexData, vertexDataLen, indexes, indexesLen, vtxdFlags, saveData,\
+        saveData? GL_DYNAMIC_DRAW : GL_STATIC_DRAW, GL_STATIC_DRAW )
 
-void flgmBmeshSetTransform(flgmBmesh* bm, float16* transform, bool saveCopy);
+void flgmbmFree(flgmBasicMesh* bm);
 
-void flgmBmeshDraw(flgmBmesh* mesh, flglShaderProgram shaderProgram);
+void flgmbmSetTransform(flgmBasicMesh* bm, float16* transform, bool saveCopy);
 
-//void flgmBmeshComputeVertexNormals(flgmBmesh* mesh);
+void flgmbmDraw(flgmBasicMesh* mesh, flglShaderProgram shaderProgram);
 
+//void flgmbmComputeVertexNormals(flgmBasicMesh* mesh);
+
+flgmBasicMesh* flgmbmNewRectangle(GLuint width, GLuint height, const GLfloat* vtxClrs, uint8_t vtxdFlags);
+
+/*==========================================Utils==========================================*/
+//-------------------------------------------------------------------------------------------
 void* flgmComputeVertexNormal(
-    const float* vtxs, uint vtxsStride, float* normDest, uint normDestStride, 
-    const uint* indexes, uint indexesLen  );
+    const GLfloat* vtxs, GLuint vtxsStride, GLfloat* normDest, GLuint normDestStride, 
+    const GLuint* indexes, GLuint indexesLen  );
+
+#define flgmStrideCopy(dest, src, count, stride)\
+    for(int i = 0; i<count; i++) *(dest + i*stride) = *(src+i)
+
+#define flgmMemcpy(dest, src, nDataPerBlock, nBlocks, dataType, nDataStride)\
+    for(int i = 0; i<nBlocks; i++)\
+        memcpy( (char*)dest+i*nDataStride*sizeof(dataType), (char*)src+i*nDataPerBlock*sizeof(dataType),\
+                nDataPerBlock*sizeof(dataType) )
+
 #endif

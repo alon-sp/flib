@@ -65,7 +65,7 @@ bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool 
  * @param errlogPD
  * @return The id of the openGL program object which will be 0(zero) if any error occur.
  */
-GLuint flglCreateProgramFromSrc(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD);
+GLuint flglCreateProgramFromSrc(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD);
 
 /**
  * @brief Create the openGL program object from source file and perform all neccessary cleanup operations
@@ -75,7 +75,7 @@ GLuint flglCreateProgramFromSrc(const char* vertexShaderSrc, const char* fragSha
  * @param errlogPD 
  * @return The id of the openGL program object which will be 0(zero) if any error occur.
  */
-GLuint flglCreateProgramFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD);
+GLuint flglCreateProgramFromFile(const GLchar* vertexShaderPath, const GLchar* fragShaderPath, flLog** errlogPD);
 
 flLog* flglGetProgramInfolog(GLuint program);
 
@@ -87,12 +87,12 @@ struct flglShaderProgram{
     GLint ulModel, ulView, ulProj; //ul -> uniform location
     GLint ulMatDiff, ulMatSpec, ulMatShine;
 };
-#define flglShaderProgramInit() {  .id = 0, .ulModel = -1, .ulView = -1, .ulProj = -1,\
+#define flglspInit() {  .id = 0, .ulModel = -1, .ulView = -1, .ulProj = -1,\
     .ulMatDiff = -1, .ulMatSpec = -1, .ulMatShine = -1  }
 
-flglShaderProgram flglShaderProgramNew(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD);
+flglShaderProgram flglspNew(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD);
 
-flglShaderProgram flglShaderProgramNewFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD);
+flglShaderProgram flglspNewFromFile(const GLchar* vertexShaderPath, const GLchar* fragShaderPath, flLog** errlogPD);
 
 /*==========Buffer==========*/
 //----------------------------
@@ -100,10 +100,10 @@ GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenu
 
 /*==========Texture==========*/
 //----------------------------
-GLuint flglGenTexture(const uint8_t* data, int width, int height, uint8_t nChannels);
+GLuint flglGenTexture(const uint8_t* data, GLint width, GLint height, uint8_t nChannels);
 
-GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD);
+GLuint flglGenTextureFromFile(const GLchar* filePath, flLog** errlogPD);
 
-const char* flglGetError();
+const GLchar* flglGetError();
 
 #endif

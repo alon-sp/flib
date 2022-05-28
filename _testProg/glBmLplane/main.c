@@ -56,7 +56,7 @@ static const char* fsPathGL = "../../../_testProg/glBmLplane/fs.glsl";
 static const char* tex1PathGL = "../../../_testProg/res/images/clflower.jpg";
 static flglShaderProgram progGL;
 static GLuint diffTexGL;
-flgmBmesh* bmesh;
+flgmBasicMesh* bmesh;
 Matrix view, proj;
 GLint ulLightPos, ulLightClr, ulViewPos;
 
@@ -71,7 +71,7 @@ bool glpInit(){
     return false;\
 }while(0)
 
-    progGL = flglShaderProgramNewFromFile(vsPathGL, fsPathGL, &errlog);
+    progGL = flglspNewFromFile(vsPathGL, fsPathGL, &errlog);
     if(!progGL.id) _printfErrlogAndExit(errlog);
 
     //==Create GL textures
@@ -92,19 +92,19 @@ bool glpInit(){
         2, 3, 0
     };
 
-    bmesh = flgmBmeshNew(vertices, sizeof(vertices)/sizeof(*vertices), indices, 
-            sizeof(indices)/sizeof(*indices), flgmVTXD_POS|flgmVTXD_NORM|flgmVTXD_TEXCOORD|flgmVTXD_CLR, false );
+    bmesh = flgmbmNew(vertices, sizeof(vertices)/sizeof(*vertices), indices, 
+            sizeof(indices)/sizeof(*indices), flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR, false );
     if(!bmesh){
         printf("\nFailed to create bmesh");
         return false;
     }
     
-    bmesh->mat = (flgmBmeshMat){.diffTexID = diffTexGL, .specTexID = 0, .shine = 16};
+    bmesh->mat = (flgmbmMat){.diffTexID = diffTexGL, .specTexID = 0, .shine = 16};
 
     //Create a model matrix to rotate the rectangle 90 degrees about the x-axis
     Matrix model = MatrixRotateX(DEG2RAD*(90-30));
     float16 modelFv = MatrixToFloatV(model);
-    flgmBmeshSetTransform(bmesh, &modelFv, true);
+    flgmbmSetTransform(bmesh, &modelFv, true);
 
     //Setup view matrix
     view = MatrixLookAt((Vector3){0, 0, 2}, (Vector3){0, 0, 0}, (Vector3){0, 1, 0});
@@ -132,7 +132,7 @@ void glpRender(){
     glUniform3f(ulLightPos, 0, 0.5, 0);
     glUniform3f(ulLightClr, 1, 1, 1);
     
-    flgmBmeshDraw(bmesh, progGL);
+    flgmbmDraw(bmesh, progGL);
 
     const char* errstr;
     if(errstr = flglGetError()){
@@ -149,7 +149,7 @@ void glpCleanup(){
     }
 
     if(bmesh){
-        flgmBmeshFree(bmesh);
+        flgmbmFree(bmesh);
         bmesh = NULL;
     }
 

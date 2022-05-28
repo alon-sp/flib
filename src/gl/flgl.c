@@ -13,7 +13,7 @@ GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, fl
     glShaderSource(shader, 1, shaderSrcs, NULL);
     glCompileShader(shader);
 
-    int compileStatus;
+    GLint compileStatus;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
 
     if(compileStatus != GL_TRUE){
@@ -28,7 +28,7 @@ GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, fl
 
 flLog* flglGetShaderInfolog(GLuint shader){
     GLchar infolog[512];
-    int infologLength;
+    GLint infologLength;
     glGetShaderInfoLog(shader, 512-1, &infologLength, infolog);
     *(infolog+infologLength) = '\0';
     
@@ -48,7 +48,7 @@ bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool 
     glAttachShader(shaderProgram, fshader);
     glLinkProgram(shaderProgram);
 
-    int linkStatus;
+    GLint linkStatus;
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
 
     if(linkStatus && deleteShaders){
@@ -64,7 +64,7 @@ bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool 
     return true;
 }
 
-GLuint flglCreateProgramFromSrc(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD){
+GLuint flglCreateProgramFromSrc(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD){
     flLog* errlog = fllogNew("");
 
     GLuint progGL = 0;
@@ -116,19 +116,19 @@ GLuint flglCreateProgramFromSrc(const char* vertexShaderSrc, const char* fragSha
     return progGL;
 }
 
-GLuint flglCreateProgramFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD){
+GLuint flglCreateProgramFromFile(const GLchar* vertexShaderPath, const GLchar* fragShaderPath, flLog** errlogPD){
     flLog* errlog = fllogNew("");
     GLuint progGL = 0;
 
     flLog* vertexShaderSrcLog = NULL;
-    const char *vertexShaderSrc = flfiRead(vertexShaderPath, &vertexShaderSrcLog);
+    const GLchar *vertexShaderSrc = flfiRead(vertexShaderPath, &vertexShaderSrcLog);
     if( !vertexShaderSrc ){
         fllogPushs(errlog, 2, "\n\nvertex shader\n", fllogStr(vertexShaderSrcLog));
         fllogPfree(&vertexShaderSrcLog);
     }
 
     flLog* fragShaderSrcLog = NULL;
-    const char *fragShaderSrc = flfiRead(fragShaderPath, &fragShaderSrcLog);
+    const GLchar *fragShaderSrc = flfiRead(fragShaderPath, &fragShaderSrcLog);
     if( !fragShaderSrc ){
         fllogPushs(errlog, 2, "\n\nfragment shader\n", fllogStr(fragShaderSrcLog));
         fllogPfree(&fragShaderSrcLog);
@@ -158,14 +158,14 @@ GLuint flglCreateProgramFromFile(const char* vertexShaderPath, const char* fragS
 
 flLog* flglGetProgramInfolog(GLuint program){
     GLchar infolog[512];
-    int infologLength;
+    GLint infologLength;
     glGetProgramInfoLog(program, 512-1, &infologLength, infolog);
     *(infolog+infologLength) = '\0';
     
     return fllogNew(infolog);
 }
 
-static void flglShaderProgramSetupUniforms(flglShaderProgram* sp){
+static void flglspSetupUniforms(flglShaderProgram* sp){
     //Query default uniform locations
     sp->ulModel = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MODEL);
     sp->ulView = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_VIEW);
@@ -175,24 +175,24 @@ static void flglShaderProgramSetupUniforms(flglShaderProgram* sp){
     sp->ulMatShine = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSHINE);
 }
 
-flglShaderProgram flglShaderProgramNew(const char* vertexShaderSrc, const char* fragShaderSrc, flLog** errlogPD){
-    flglShaderProgram sp = flglShaderProgramInit();
+flglShaderProgram flglspNew(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD){
+    flglShaderProgram sp = flglspInit();
     GLuint progGL = flglCreateProgramFromSrc(vertexShaderSrc, fragShaderSrc, errlogPD);
     if(progGL){
         sp.id = progGL;
         //Setup default uniforms
-        flglShaderProgramSetupUniforms(&sp);
+        flglspSetupUniforms(&sp);
     }
     return sp;
 }
 
-flglShaderProgram flglShaderProgramNewFromFile(const char* vertexShaderPath, const char* fragShaderPath, flLog** errlogPD){
-    flglShaderProgram sp = flglShaderProgramInit();
+flglShaderProgram flglspNewFromFile(const GLchar* vertexShaderPath, const GLchar* fragShaderPath, flLog** errlogPD){
+    flglShaderProgram sp = flglspInit();
     GLuint progGL = flglCreateProgramFromFile(vertexShaderPath, fragShaderPath, errlogPD);
     if(progGL){
         sp.id = progGL;
         //Setup default uniforms
-        flglShaderProgramSetupUniforms(&sp);
+        flglspSetupUniforms(&sp);
     }
     return sp;
 }
@@ -207,7 +207,7 @@ GLuint flglGenBuffer(GLenum target, GLsizeiptr dataSize, const void* data, GLenu
     return bufferID;
 }
 
-GLuint flglGenTexture(const uint8_t* data, int width, int height, uint8_t nChannels){
+GLuint flglGenTexture(const uint8_t* data, GLint width, GLint height, uint8_t nChannels){
     GLuint textureID;
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
@@ -230,9 +230,9 @@ GLuint flglGenTexture(const uint8_t* data, int width, int height, uint8_t nChann
     return textureID;
 }
 
-GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD){
+GLuint flglGenTextureFromFile(const GLchar* filePath, flLog** errlogPD){
     GLuint textureID = 0;
-    int width, height, nChannels;
+    GLint width, height, nChannels;
     stbi_set_flip_vertically_on_load(true);
     stbi_uc *data = stbi_load(filePath, &width, &height, &nChannels, 0);
     stbi_set_flip_vertically_on_load(false);
@@ -248,7 +248,7 @@ GLuint flglGenTextureFromFile(const char* filePath, flLog** errlogPD){
     return textureID;
 }
 
-const char* flglGetError(){
+const GLchar* flglGetError(){
     GLenum errcode;
     switch(errcode = glGetError()){
         case GL_INVALID_ENUM:

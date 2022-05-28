@@ -56,7 +56,7 @@ static const char* fsPathGL = "../../../_testProg/glBmRect/fs.glsl";
 static const char* tex1PathGL = "../../../_testProg/res/images/awesomeface.png";
 static GLuint tex1GL;
 static flglShaderProgram progGL;
-flgmBmesh* bmesh;
+flgmBasicMesh* bmesh;
 
 bool glpInit(){
 
@@ -69,7 +69,7 @@ bool glpInit(){
     return false;\
 }while(0)
 
-    progGL = flglShaderProgramNewFromFile(vsPathGL, fsPathGL, &errlog);
+    progGL = flglspNewFromFile(vsPathGL, fsPathGL, &errlog);
     if(!progGL.id) _printfErrlogAndExit(errlog);
 
     //==Create GL textures
@@ -90,14 +90,14 @@ bool glpInit(){
         2, 3, 0
     };
 
-    bmesh = flgmBmeshNew(vertices, sizeof(vertices)/sizeof(*vertices), indices, 
-            sizeof(indices)/sizeof(*indices), flgmVTXD_POS|flgmVTXD_TEXCOORD|flgmVTXD_CLR, false );
+    bmesh = flgmbmNew(vertices, sizeof(vertices)/sizeof(*vertices), indices, 
+            sizeof(indices)/sizeof(*indices), flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR, false );
     if(!bmesh){
         printf("\nFailed to create bmesh");
         return false;
     }
     
-    bmesh->mat = (flgmBmeshMat){.diffTexID = tex1GL, .specTexID = 0, .shine = -1};
+    bmesh->mat = (flgmbmMat){.diffTexID = tex1GL, .specTexID = 0, .shine = -1};
 
     //glViewport(0, 0, glpWindowWidth, glpWindowHeight);
 
@@ -109,7 +109,7 @@ void glpRender(){
 
     glUseProgram(progGL.id);
     
-    flgmBmeshDraw(bmesh, progGL);
+    flgmbmDraw(bmesh, progGL);
 
     glUseProgram(0);
 }
@@ -125,7 +125,7 @@ void glpCleanup(){
     }
 
     if(bmesh){
-        flgmBmeshFree(bmesh);
+        flgmbmFree(bmesh);
         bmesh = NULL;
     }
 }
