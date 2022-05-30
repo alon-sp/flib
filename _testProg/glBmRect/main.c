@@ -76,26 +76,12 @@ bool glpInit(){
     tex1GL = flglGenTextureFromFile(tex1PathGL, &errlog);
     if(!tex1GL) _printfErrlogAndExit(errlog);
 
-    //--
-    GLfloat vertices[] = {//Rectangle
-        //vertex(x,y,z)     texture coord  vertex color(rgb)  
-        0.5f,  0.5f, 0.0f,  1.0f, 1.0f,    1.0f, 0.0f, 0.0f,  
-       -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,    0.0f, 1.0f, 0.0f,  
-       -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,    0.0f, 0.0f, 1.0f,  
-        0.5f, -0.5f, 0.0f,  1.0f, 0.0f,    1.0f, 1.0f, 0.0f  
-    };
-
-    GLuint indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-
-    bmesh = flgmbmNew(vertices, sizeof(vertices)/sizeof(*vertices), indices, 
-            sizeof(indices)/sizeof(*indices), flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR, false );
+    bmesh = flgmbmNewRectangle(1, 1, flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD);
     if(!bmesh){
         printf("\nFailed to create bmesh");
         return false;
     }
+    flgmbmSetColor(bmesh, ((Vector3){1, 0, 0}));
     
     bmesh->mat = (flgmbmMat){.diffTexID = tex1GL, .specTexID = 0, .shine = -1};
 

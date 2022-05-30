@@ -20,7 +20,6 @@ struct flgmbmMat{
 #define flgmbmVTXD_POS       ( (uint8_t)1  )
 #define flgmbmVTXD_NORM      ( (uint8_t)2  )
 #define flgmbmVTXD_TEXCOORD  ( (uint8_t)64 )
-#define flgmbmVTXD_CLR       ( (uint8_t)128 )
 
 #define flgmbmTYPE_NIL         0
 #define flgmbmTYPE_RECTANGLE   1
@@ -38,10 +37,12 @@ struct flgmBasicMesh{
     const GLfloat* const vtxd;
     #define _flgmbmGetVtxd(bm) ( (GLfloat*)(bm)->vtxd )
     const GLuint vtxdLen;
+    const GLuint vtxCount;
     const uint8_t vtxdFlags;
-    #define _flgmbmSetVtxd(bm, vertexData, vertexDataLen, flags) do{\
+    #define _flgmbmSetVtxd(bm, vertexData, vertexDataLen, vertexCount, flags) do{\
         *( (GLfloat**)&(bm)->vtxd ) = (GLfloat*)(vertexData);\
         *( (GLuint*)&(bm)->vtxdLen ) = (vertexDataLen);\
+        *( (GLuint*)&(bm)->vtxCount ) = (vertexCount);\
         *( (uint8_t*)&(bm)->vtxdFlags ) = (flags);\
     }while(0)
 
@@ -65,6 +66,10 @@ struct flgmBasicMesh{
     const GLint type;//The type of mesh: any of flgmbmTYPE_* constants
     #define _flgmbmSetType(bm, _type) (  *( (GLint*)&(bm)->type ) = (_type)  )
 
+    const Vector3 color;/*rgb*/
+    const bool colorEnabled;
+    #define _flgmbmSetColorEnabled(bm, bval) (  *( (bool*)&(bm)->colorEnabled ) = (bval)  )
+
 
     flgmbmMat mat;
 
@@ -79,23 +84,28 @@ struct flgmBasicMesh{
 
 };
 
-flgmBasicMesh* flgmbmNewBU(  GLfloat* vertexData, const GLuint vertexDataLen, const GLuint* indexes, 
-        const GLuint indexesLen, uint8_t vtxdFlags, bool saveData, GLenum vboUsage,
-        GLenum iboUsage);
+flgmBasicMesh* flgmbmNewBU(  
+    GLfloat* vertexData, const GLuint vertexDataLen, GLuint vertexCount, uint8_t vtxdFlags,
+     const GLuint* indexes, const GLuint indexesLen, bool saveData, 
+     GLenum vboUsage, GLenum iboUsage );
 
-#define flgmbmNew(vertexData, vertexDataLen, indexes, indexesLen, vtxdFlags, saveData)\
-    flgmbmNewBU(  vertexData, vertexDataLen, indexes, indexesLen, vtxdFlags, saveData,\
+#define flgmbmNew(vertexData, vertexDataLen, vertexCount, vtxdFlags, indexes, indexesLen, saveData)\
+    flgmbmNewBU(  vertexData, vertexDataLen, vertexCount, vtxdFlags, indexes, indexesLen, saveData,\
         saveData? GL_DYNAMIC_DRAW : GL_STATIC_DRAW, GL_STATIC_DRAW )
 
 void flgmbmFree(flgmBasicMesh* bm);
 
 void flgmbmSetTransform(flgmBasicMesh* bm, float16* transform, bool saveCopy);
+#define flgmbmSetColor(bm, clr) do{\
+    _flgmbmSetColorEnabled(bm, true);\
+    *(Vector3*)( &(bm)->color ) = (clr);\
+}while(0)
 
 void flgmbmDraw(flgmBasicMesh* mesh, flglShaderProgram shaderProgram);
 
 //void flgmbmComputeVertexNormals(flgmBasicMesh* mesh);
 
-flgmBasicMesh* flgmbmNewRectangle(GLuint width, GLuint height, const GLfloat* vtxClrs, uint8_t vtxdFlags);
+flgmBasicMesh* flgmbmNewRectangle(GLuint width, GLuint height, uint8_t vtxdFlags);
 
 /*==========================================Utils==========================================*/
 //-------------------------------------------------------------------------------------------
@@ -103,12 +113,5 @@ void* flgmComputeVertexNormal(
     const GLfloat* vtxs, GLuint vtxsStride, GLfloat* normDest, GLuint normDestStride, 
     const GLuint* indexes, GLuint indexesLen  );
 
-#define flgmStrideCopy(dest, src, count, stride)\
-    for(int i = 0; i<count; i++) *(dest + i*stride) = *(src+i)
-
-#define flgmMemcpy(dest, src, nDataPerBlock, nBlocks, dataType, nDataStride)\
-    for(int i = 0; i<nBlocks; i++)\
-        memcpy( (char*)dest+i*nDataStride*sizeof(dataType), (char*)src+i*nDataPerBlock*sizeof(dataType),\
-                nDataPerBlock*sizeof(dataType) )
 
 #endif

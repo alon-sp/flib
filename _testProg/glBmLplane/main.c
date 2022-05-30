@@ -78,22 +78,7 @@ bool glpInit(){
     diffTexGL = flglGenTextureFromFile(tex1PathGL, &errlog);
     if(!diffTexGL) _printfErrlogAndExit(errlog);
 
-    //--
-    GLfloat vertices[] = {//Rectangle
-        //vertex(x,y,z)   normal destination  texture coord  color(rgb)
-        1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-       -1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-       -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f
-    };
-
-    GLuint indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-
-    bmesh = flgmbmNew(vertices, sizeof(vertices)/sizeof(*vertices), indices, 
-            sizeof(indices)/sizeof(*indices), flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR, false );
+    bmesh = flgmbmNewRectangle(2, 2, flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD);
     if(!bmesh){
         printf("\nFailed to create bmesh");
         return false;

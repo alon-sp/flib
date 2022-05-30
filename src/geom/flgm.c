@@ -5,74 +5,67 @@ static bool flgmbmVtxdIsSupported(uint8_t flags){
         case flgmbmVTXD_POS:
         case flgmbmVTXD_POS|flgmbmVTXD_NORM:
         case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
-        case flgmbmVTXD_POS|flgmbmVTXD_CLR:
         case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_CLR:
-        case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR:
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR:
             return true;
         default:
             return false;
     }
 }
 
-static GLuint flgmbmGetStride(uint8_t vtxdFlags){
-    switch(vtxdFlags){
-        case flgmbmVTXD_POS:
-            return 3;
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM:
-        case flgmbmVTXD_POS|flgmbmVTXD_CLR:
-            return 3+3;
-        case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
-            return 3+2;
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
-            return 3+3+2;
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_CLR:
-            return 3+3+3;
-        case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR:
-            return 3+2+3;
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR:
-            return 3+3+2+3;
-    }
-    return 0;
-}
+// static GLuint flgmbmGetStride(uint8_t vtxdFlags){
+//     switch(vtxdFlags){
+//         case flgmbmVTXD_POS:
+//             return 3;
+//         case flgmbmVTXD_POS|flgmbmVTXD_NORM:
+//         case flgmbmVTXD_POS:
+//             return 3+3;
+//         case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
+//             return 3+2;
+//         case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
+//             return 3+3+2;
+//         case flgmbmVTXD_POS|flgmbmVTXD_NORM:
+//             return 3+3+3;
+//         case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
+//             return 3+2+3;
+//         case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
+//             return 3+3+2+3;
+//     }
+//     return 0;
+// }
 
-static GLuint flgmbmGetIndex(flgmBasicMesh* bm, uint8_t dflag){
-    switch(bm->vtxdFlags){
+static GLuint flgmbmGetIndex(uint8_t vtxdFlags, uint8_t targetFlag, GLuint vtxCount){
+    switch(vtxdFlags){
         case flgmbmVTXD_POS:
             break;
         case flgmbmVTXD_POS|flgmbmVTXD_NORM:
-        case flgmbmVTXD_POS|flgmbmVTXD_CLR:
         case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
-            if(dflag != flgmbmVTXD_POS) return 3;
+            if(targetFlag != flgmbmVTXD_POS) return 3*vtxCount;
             break;
         
         case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_CLR:
-            if(dflag == flgmbmVTXD_NORM) return 3;
-            if(dflag != flgmbmVTXD_POS) return 3+3;
-            break;
-
-        case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR:
-            if(dflag == flgmbmVTXD_TEXCOORD) return 3;
-            if(dflag == flgmbmVTXD_CLR) return 3+2;
-            break;
-
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR:
-            if(dflag == flgmbmVTXD_NORM) return 3;
-            if(dflag == flgmbmVTXD_TEXCOORD) return 3+3;
-            if(dflag == flgmbmVTXD_CLR) return 3+3+2;
+            if(targetFlag == flgmbmVTXD_NORM) return 3*vtxCount;
+            if(targetFlag == flgmbmVTXD_TEXCOORD) return (3*2)*vtxCount;
             break;
     }
 
     return 0;
 }
 
-flgmBasicMesh* flgmbmNewBU(  GLfloat* vertexData, const GLuint vertexDataLen, const GLuint* indexes, 
-        const GLuint indexesLen, uint8_t vtxdFlags, bool saveData, GLenum vboUsage,
-        GLenum iboUsage){
+static GLuint flgmbmGetVtxdLen(uint8_t vtxdFlags, GLuint vtxCount){
+    GLuint activeFlagsFloatCount = 0;
+    if(vtxdFlags & flgmbmVTXD_POS) activeFlagsFloatCount += 3;
+    if(vtxdFlags & flgmbmVTXD_NORM) activeFlagsFloatCount += 3;
+    if(vtxdFlags & flgmbmVTXD_TEXCOORD) activeFlagsFloatCount += 2;
+
+    return activeFlagsFloatCount * vtxCount;
+}
+
+flgmBasicMesh* flgmbmNewBU(  
+    GLfloat* vertexData, const GLuint vertexDataLen, GLuint vertexCount, uint8_t vtxdFlags,
+     const GLuint* indexes, const GLuint indexesLen, bool saveData, 
+     GLenum vboUsage, GLenum iboUsage ){
     
-    if( !(vertexData && indexes) ) return NULL;
+    if( !(vertexData && indexes && vertexDataLen && indexesLen) ) return NULL;
     if( !flgmbmVtxdIsSupported(vtxdFlags) ) return NULL;
 
     flgmBasicMesh* bm = flmemMalloc(sizeof(flgmBasicMesh));
@@ -84,27 +77,28 @@ flgmBasicMesh* flgmbmNewBU(  GLfloat* vertexData, const GLuint vertexDataLen, co
         GLuint* indxBuf = flmemMalloc(indexesLen*sizeof(GLuint));
         memcpy(indxBuf, indexes, indexesLen*sizeof(GLuint));
 
-        _flgmbmSetVtxd(bm, vtxdBuf, vertexDataLen, vtxdFlags);
+        _flgmbmSetVtxd(bm, vtxdBuf, vertexDataLen, vertexCount, vtxdFlags);
         _flgmbmSetIndexes(bm, indxBuf, indexesLen);
     }else{
-        _flgmbmSetVtxd(bm, vertexData, vertexDataLen, vtxdFlags);
+        _flgmbmSetVtxd(bm, vertexData, vertexDataLen, vertexCount, vtxdFlags);
         _flgmbmSetIndexes(bm, indexes, indexesLen);
     }
 
     _flgmbmSetTransform(bm, NULL);
     _flgmbmSetTransformBuf(bm, NULL);
     _flgmbmSetType(bm, flgmbmTYPE_NIL);
+    _flgmbmSetColorEnabled(bm, false);
     bm->mat = (flgmbmMat)flgmbmMatInit();
     flgmbmSetVboID(bm, 0);
     flgmbmSetIboID(bm, 0);
     flgmbmSetVaoID(bm, 0);
 
-    #define _fltmpFlagIsSet(_bm, dflag) ( (_bm)->vtxdFlags & (dflag) )
+    #define _fltmpFlagIsSet(_bm, targetFlag) ( (_bm)->vtxdFlags & (targetFlag) )
     
     if(_fltmpFlagIsSet(bm, flgmbmVTXD_NORM)){
-        flgmComputeVertexNormal(  bm->vtxd, flgmbmGetStride(bm->vtxdFlags), 
-            (GLfloat*)bm->vtxd + flgmbmGetIndex(bm, flgmbmVTXD_NORM), 
-            flgmbmGetStride(bm->vtxdFlags), bm->indexes, bm->indexesLen  );
+        flgmComputeVertexNormal(  bm->vtxd, 0, 
+            (GLfloat*)bm->vtxd + flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_NORM, bm->vtxCount), 
+            0, bm->indexes, bm->indexesLen  );
     }
 
     //Generate GL buffers
@@ -127,32 +121,23 @@ flgmBasicMesh* flgmbmNewBU(  GLfloat* vertexData, const GLuint vertexDataLen, co
     glBindBuffer(GL_ARRAY_BUFFER, bm->vboID);
     //position attribute
     if(_fltmpFlagIsSet(bm, flgmbmVTXD_POS)){
-        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXPOS, 3, GL_FLOAT, false, 
-            flgmbmGetStride(bm->vtxdFlags)*sizeof(*bm->vtxd), 
-            (GLvoid*)(flgmbmGetIndex(bm, flgmbmVTXD_POS)*sizeof(*bm->vtxd))  );
+        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXPOS, 3, GL_FLOAT, false,  0, 
+            (GLvoid*)(flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_POS, bm->vtxCount)*sizeof(*bm->vtxd))  );
         glEnableVertexAttribArray(FLGL_ATTRIBLOC_VTXPOS);
     }
     //normal attribute
     if(_fltmpFlagIsSet(bm, flgmbmVTXD_NORM)){
-        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXNORM, 3, GL_FLOAT, false, 
-            flgmbmGetStride(bm->vtxdFlags)*sizeof(*bm->vtxd), 
-            (GLvoid*)(flgmbmGetIndex(bm, flgmbmVTXD_NORM)*sizeof(*bm->vtxd))  );
+        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXNORM, 3, GL_FLOAT, false, 0, 
+            (GLvoid*)(flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_NORM, bm->vtxCount)*sizeof(*bm->vtxd))  );
         glEnableVertexAttribArray(FLGL_ATTRIBLOC_VTXNORM);
     }
     //texture coordinate
     if(_fltmpFlagIsSet(bm, flgmbmVTXD_TEXCOORD)){
-        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXTEXCOORD, 2, GL_FLOAT, false, 
-            flgmbmGetStride(bm->vtxdFlags)*sizeof(*bm->vtxd), 
-            (GLvoid*)(flgmbmGetIndex(bm, flgmbmVTXD_TEXCOORD)*sizeof(*bm->vtxd))  );
+        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXTEXCOORD, 2, GL_FLOAT, false,  0, 
+            (GLvoid*)(flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_TEXCOORD, bm->vtxCount)*sizeof(*bm->vtxd))  );
         glEnableVertexAttribArray(FLGL_ATTRIBLOC_VTXTEXCOORD);
     }
-    //color
-    if(_fltmpFlagIsSet(bm, flgmbmVTXD_CLR)){
-        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXCLR, 3, GL_FLOAT, false, 
-            flgmbmGetStride(bm->vtxdFlags)*sizeof(*bm->vtxd), 
-            (GLvoid*)(flgmbmGetIndex(bm, flgmbmVTXD_CLR)*sizeof(*bm->vtxd))  );
-        glEnableVertexAttribArray(FLGL_ATTRIBLOC_VTXCLR);
-    }
+
     //bind ibo
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bm->iboID);
 
@@ -162,7 +147,7 @@ flgmBasicMesh* flgmbmNewBU(  GLfloat* vertexData, const GLuint vertexDataLen, co
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     if(!saveData){
-        _flgmbmSetVtxd(bm, NULL, 0, bm->vtxdFlags);
+        _flgmbmSetVtxd(bm, NULL, 0, 0, bm->vtxdFlags);
         _flgmbmSetIndexes(bm, NULL, bm->indexesLen);//@note: storing the index buffer
             //length despise setting it to NULL is important since it will be use later in
             //drawing the mesh(in call to glDrawElements)
@@ -177,7 +162,7 @@ void flgmbmFree(flgmBasicMesh* bm){
 
     if(bm->vtxd){
         flmemFree((void*)bm->vtxd);
-        _flgmbmSetVtxd(bm, NULL, 0, 0);
+        _flgmbmSetVtxd(bm, NULL, 0, 0, 0);
     }
     if(bm->indexes){
         flmemFree((void*)bm->indexes);
@@ -230,6 +215,9 @@ void flgmbmDraw(flgmBasicMesh* bm, flglShaderProgram shaderProgram){
     if(bm->transform_ && shaderProgram.ulModel >= 0){
         glUniformMatrix4fv(shaderProgram.ulModel, 1, false, bm->transform_->v);
     }
+    if(bm->colorEnabled && shaderProgram.ulMeshClr >= 0){
+        glUniform3f(shaderProgram.ulMeshClr, bm->color.x, bm->color.y, bm->color.z);
+    }
     
     glBindVertexArray(bm->vaoID);
     glDrawElements(GL_TRIANGLES, bm->indexesLen, GL_UNSIGNED_INT, 0);
@@ -240,17 +228,17 @@ void flgmbmDraw(flgmBasicMesh* bm, flglShaderProgram shaderProgram){
 
 
 
-flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, const GLfloat* vtxClrs, uint8_t vtxdFlags){
+flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, uint8_t vtxdFlags){
     if(!flgmbmVtxdIsSupported(vtxdFlags)) return NULL;
 
     //Setup vertices for a rectangle centre about the origin of the x-y plane
-    GLfloat rectVtxs[4] = {
-         w/2,  h/2, 0, //top right corner vertex
-        -w/2,  h/2, 0, //top left corner vertex
-        -w/2, -h/2, 0, //bottom left corner vertex
-         w/2, -h/2, 0  //bottom right corner vertex
+    GLfloat rectVtxs[4*3] = {
+          w/2.0f,    h/2.0f,  0, //top right corner vertex
+        -(w/2.0f),   h/2.0f,  0, //top left corner vertex
+        -(w/2.0f), -(h/2.0f), 0, //bottom left corner vertex
+          w/2.0f,  -(h/2.0f), 0  //bottom right corner vertex
     };
-    GLint vtxCount = sizeof(rectVtxs)/(3*sizeof(*rectVtxs));
+    #define _fltmpRectVtxCount 4
     //rectangle indexes
     GLuint rectIndexes[] = {
         0, 1, 2,
@@ -258,10 +246,35 @@ flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, const GLfloat* vtxClrs, ui
     };
 
     //Allocate large enough memory that can contain maximum vertex data
-    GLfloat rectVtxd[4*(3/*POS*/ + 3/*NORM*/ + 2/*TEXCOORD*/ + 3/*CLR*/)];
+    GLfloat rectVtxd[_fltmpRectVtxCount*(3/*POS*/ + 3/*NORM*/ + 2/*TEXCOORD*/)];
     
     //Write all vertex data into $rectVtxd
-    flgmMemcpy(rectVtxd, rectVtxs, 3, vtxCount, GLfloat, flgmbmGetStride(vtxdFlags));
+    //------------------------------------
+        //position data
+    if(vtxdFlags & flgmbmVTXD_POS){
+        memcpy(rectVtxd, rectVtxs, sizeof(rectVtxs));
+    }
+        //normal data
+    //Vertex normals will be automatically computed
+
+        //texture coordinate
+    if(vtxdFlags & flgmbmVTXD_TEXCOORD){
+        //Setup texture coordinate for rectangle using openGL texture coordinate system
+        GLfloat rectTexCoords[_fltmpRectVtxCount*2/*floats per texture coord*/] = {
+            1, 1, //top right corner vertex
+            0, 1, //top left corner vertex
+            0, 0, //bottom left corner vertex
+            1, 0  //bottom right corner vertex
+        };
+        memcpy(rectVtxd+flgmbmGetIndex(vtxdFlags, flgmbmVTXD_TEXCOORD, _fltmpRectVtxCount),
+            rectTexCoords, sizeof(rectTexCoords));
+    }
+    //--
+
+    return flgmbmNew(rectVtxd, flgmbmGetVtxdLen(vtxdFlags, _fltmpRectVtxCount), _fltmpRectVtxCount,
+    vtxdFlags, rectIndexes, sizeof(rectIndexes)/sizeof(*rectIndexes), false);
+
+    #undef _fltmpRectVtxCount
 }
 
 void* flgmComputeVertexNormal(
