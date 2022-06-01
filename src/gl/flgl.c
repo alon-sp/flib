@@ -42,7 +42,6 @@ bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool 
     glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXPOS, "vtxPos");
     glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXNORM, "vtxNorm");
     glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXTEXCOORD, "vtxTexCoord");
-    glBindAttribLocation(shaderProgram, FLGL_ATTRIBLOC_VTXCLR, "vtxClr");
 
     glAttachShader(shaderProgram, vshader);
     glAttachShader(shaderProgram, fshader);
@@ -173,6 +172,7 @@ static void flglspSetupUniforms(flglShaderProgram* sp){
     sp->ulMatDiff = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATDIFF);
     sp->ulMatSpec = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSPEC);
     sp->ulMatShine = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSHINE);
+    sp->ulMeshClr = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MESHCLR);
 }
 
 flglShaderProgram flglspNew(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD){

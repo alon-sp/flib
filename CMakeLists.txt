@@ -45,6 +45,6 @@ add_library(flib
     ${FLIB_SRC_HOME}/gl/flgl.c
     ${FLIB_SRC_HOME}/util/fluti.c
     ${FLIB_SRC_HOME}/geom/flgm.c
-    ${FLIB_SRC_HOME}/math/flm.c
+    ${FLIB_SRC_HOME}/math/flmh.c
 )
 target_link_libraries(flib PUBLIC ${SDL2_LIBRARIES} PUBLIC m GL GLU GLEW)

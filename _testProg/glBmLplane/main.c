@@ -9,7 +9,7 @@ static int glpWindowWidth = 0, glpWindowHeight = 0;
 static SDL_GLContext glpContext = NULL;
 
 static bool glpInit();
-static void glpRender();
+static void glpRender(float dt);
 static void glpCleanup();
 
 int main(int argc, const char** argv){
@@ -19,7 +19,10 @@ int main(int argc, const char** argv){
     if(!glpInit()) return -1;
 
     bool quit = false;
+    uint32_t prevMillis = SDL_GetTicks();
+
     while(!quit){
+        uint32_t currentMillis = SDL_GetTicks();
         SDL_Event ev;
         while(SDL_PollEvent(&ev)){
             if(ev.type == SDL_QUIT){
@@ -28,10 +31,12 @@ int main(int argc, const char** argv){
             }
         }
 
-        glpRender();
+        glpRender( (currentMillis-prevMillis)/1000.0f);
 
         //Update screen
         SDL_GL_SwapWindow(glpWindow);
+
+        prevMillis = currentMillis;
     }
 
     // float tmp[3] = {0.1, 0.2, 0.3};
@@ -57,7 +62,8 @@ static const char* tex1PathGL = "../../../_testProg/res/images/clflower.jpg";
 static flglShaderProgram progGL;
 static GLuint diffTexGL;
 flgmBasicMesh* bmesh;
-Matrix view, proj;
+Matrix proj;
+flmhOrthonormalBasis view;
 GLint ulLightPos, ulLightClr, ulViewPos;
 
 bool glpInit(){
@@ -78,22 +84,7 @@ bool glpInit(){
     diffTexGL = flglGenTextureFromFile(tex1PathGL, &errlog);
     if(!diffTexGL) _printfErrlogAndExit(errlog);
 
-    //--
-    GLfloat vertices[] = {//Rectangle
-        //vertex(x,y,z)   normal destination  texture coord  color(rgb)
-        1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-       -1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-       -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f
-    };
-
-    GLuint indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-
-    bmesh = flgmbmNew(vertices, sizeof(vertices)/sizeof(*vertices), indices, 
-            sizeof(indices)/sizeof(*indices), flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD|flgmbmVTXD_CLR, false );
+    bmesh = flgmbmNewRectangle(2, 2, flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD);
     if(!bmesh){
         printf("\nFailed to create bmesh");
         return false;
@@ -101,13 +92,15 @@ bool glpInit(){
     
     bmesh->mat = (flgmbmMat){.diffTexID = diffTexGL, .specTexID = 0, .shine = 16};
 
-    //Create a model matrix to rotate the rectangle 90 degrees about the x-axis
+    //Create a model matrix to rotate the rectangle about the x-axis
     Matrix model = MatrixRotateX(DEG2RAD*(90-30));
     float16 modelFv = MatrixToFloatV(model);
     flgmbmSetTransform(bmesh, &modelFv, true);
 
     //Setup view matrix
-    view = MatrixLookAt((Vector3){0, 0, 2}, (Vector3){0, 0, 0}, (Vector3){0, 1, 0});
+
+    flmhobCopy( (flmhOrthonormalBasis*)&view, 
+        flmhobNewPTU((Vector3){0, 0, 2}, (Vector3){0, 0, 0}, (Vector3){0, 1, 0}, true)  );
 
     //setup projection matrix
     proj = MatrixPerspective(DEG2RAD*45, glpWindowWidth/(float)glpWindowHeight, 0.1, 100);
@@ -121,12 +114,18 @@ bool glpInit(){
     return true;
 }
 
-void glpRender(){
+void glpRender(float dt){
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(progGL.id);
-    
-    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, MatrixToFloat(view));
+
+    static bool rotated = false;
+
+    float angle = (SDL_GetTicks()/1000.0f)*60*DEG2RAD;
+    flmhobRotateZ(&view, dt*60*DEG2RAD);
+
+    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, flmhobGetViewTransform(&view));
     glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, MatrixToFloat(proj));
     
     glUniform3f(ulLightPos, 0, 0.5, 0);

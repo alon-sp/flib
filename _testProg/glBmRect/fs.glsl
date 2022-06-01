@@ -1,7 +1,6 @@
 #version 330 core
 
-in vec3 vClr;
-in vec2 vTexCoord;
+in vec2 fragTexCoord;
 
 struct BmMat{
     sampler2D diffTex;
@@ -10,10 +9,11 @@ struct BmMat{
 };
 
 uniform BmMat uMat;
+uniform vec3 uMeshClr;
 
 out vec4 fragClr;
 
 void main(){
-    fragClr = texture(uMat.diffTex, vTexCoord);
-    fragClr += 0.5*vec4(vClr, 1.0);
+    fragClr = texture(uMat.diffTex, fragTexCoord);
+    fragClr += 0.2*vec4(uMeshClr, 1.0);
 }

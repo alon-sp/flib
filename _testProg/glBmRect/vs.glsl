@@ -1,15 +1,12 @@
 #version 330 core
 
-in vec3 aVtxPos;
-in vec3 aVtxClr;
-in vec2 aVtxTexCoord;
+in vec3 vtxPos;
+in vec2 vtxTexCoord;
 
-out vec3 vClr;
-out vec2 vTexCoord;
+out vec2 fragTexCoord;
 
 void main(){
-    gl_Position = vec4(aVtxPos, 1.0f);
+    gl_Position = vec4(vtxPos, 1.0f);
     
-    vClr = aVtxClr;
-    vTexCoord = aVtxTexCoord;
+    fragTexCoord = vtxTexCoord;
 }

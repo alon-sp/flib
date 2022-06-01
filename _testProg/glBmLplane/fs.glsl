@@ -1,6 +1,5 @@
 #version 330 core
 
-in vec3 fragClr;
 in vec3 fragPos;
 in vec3 fragNorm;
 in vec2 fragTexCoord;
@@ -38,5 +37,5 @@ void main(){
     vec3 lightSpec = spec*uLightClr;
 
     //
-    fragCLR = vec4( lightDiff*matDiff + lightAmb*matDiff + lightSpec*matDiff, 1);
+    fragCLR = vec4( matDiff*(lightDiff + lightAmb + lightSpec), 1);
 }
