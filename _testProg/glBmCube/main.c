@@ -12,7 +12,7 @@ static bool glpInit();
 static void glpRender(float dt);
 static void glpCleanup();
 
-static bool rightKeyDown = false, upKeyDown = false;
+static int dirLR = 0, dirUD = 0;
 
 int main(int argc, const char** argv){
     if(!flutiSDLcreateGLwindow("GL BM Lighted plane(Lplane)", 0, 0, &glpWindow, &glpContext)) return -1;
@@ -30,28 +30,38 @@ int main(int argc, const char** argv){
                 quit = true;
                 break;
             }
-            // if(ev.type == SDL_KEYDOWN){
-            //     int dir = 0;
-            //     switch(ev.key.keysym.sym){
-            //         case SDLK_RIGHT:
-            //             rightKeyDown = true;
-            //             break;
-            //         case SDLK_UP:
-            //             upKeyDown = true;
-            //             break;
-            //     }
-            // }
-            // else if(ev.type == SDL_KEYUP){
-            //     int dir = 0;
-            //     switch(ev.key.keysym.sym){
-            //         case SDLK_RIGHT:
-            //             rightKeyDown = false;
-            //             break;
-            //         case SDLK_UP:
-            //             upKeyDown = false;
-            //             break;
-            //     }
-            // }
+            if(ev.type == SDL_KEYDOWN){
+                switch(ev.key.keysym.sym){
+                    case SDLK_LEFT:
+                        dirLR = -1;
+                        break;
+                    case SDLK_RIGHT:
+                        dirLR = 1;
+                        break;
+                    case SDLK_DOWN:
+                        dirUD = -1;
+                        break;
+                    case SDLK_UP:
+                        dirUD = 1;
+                        break;
+                }
+            }
+            else if(ev.type == SDL_KEYUP){
+                switch(ev.key.keysym.sym){
+                    case SDLK_LEFT:
+                        if(dirLR < 0) dirLR = 0;
+                        break;
+                    case SDLK_RIGHT:
+                        if(dirLR > 0) dirLR = 0;
+                        break;
+                    case SDLK_DOWN:
+                        if(dirUD < 0) dirUD = 0;
+                        break;
+                    case SDLK_UP:
+                        if(dirUD > 0) dirUD = 0;
+                        break;
+                }
+            }
         }
 
         glpRender( (SDL_GetTicks()-endMillis)/1000.0f);
@@ -82,15 +92,15 @@ int main(int argc, const char** argv){
 }
 
 //=====================================================================================
-static const char* vsPathGL = "../../../_testProg/glBmLplane/vs.glsl";
-static const char* fsPathGL = "../../../_testProg/glBmLplane/fs.glsl";
+static const char* vsPathGL = "../../../_testProg/glBmCube/vs.glsl";
+static const char* fsPathGL = "../../../_testProg/glBmCube/fs.glsl";
 static const char* tex1PathGL = "../../../_testProg/res/images/clflower.jpg";
 static flglShaderProgram progGL;
 static GLuint diffTexGL;
-static flgmBasicMesh* bmesh;
+static flgmBasicMesh* planeMesh, *boxMesh;
 static Matrix proj;
 static flmhOrthonormalBasis view;
-static GLint ulLightPos, ulLightClr, ulViewPos;
+static GLint ulLightDir, ulLightClr, ulHasTex;
 
 bool glpInit(){
 
@@ -110,18 +120,28 @@ bool glpInit(){
     diffTexGL = flglGenTextureFromFile(tex1PathGL, &errlog);
     if(!diffTexGL) _printfErrlogAndExit(errlog);
 
-    bmesh = flgmbmNewRectangle(2, 2, flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD);
-    if(!bmesh){
-        printf("\nFailed to create bmesh");
+    //Initialize plane mesh
+    planeMesh = flgmbmNewRectangle(2, 2, flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD);
+    if(!planeMesh){
+        printf("\nFailed to create plane");
         return false;
     }
-    
-    bmesh->mat = (flgmbmMat){.diffTexID = diffTexGL, .specTexID = 0, .shine = 16};
-
+    planeMesh->mat = (flgmbmMat){.diffTexID = diffTexGL, .specTexID = 0, .shine = 16};
     //Create a model matrix to rotate the rectangle about the x-axis
-    Matrix model = MatrixRotateX(DEG2RAD*(90-30));
-    float16 modelFv = MatrixToFloatV(model);
-    flgmbmSetTransform(bmesh, &modelFv, true);
+    Matrix planeModel = MatrixRotateX(DEG2RAD*90);
+    float16 planeModelV = MatrixToFloatV(planeModel);
+    flgmbmSetTransform(planeMesh, &planeModelV, true);
+
+    //initialize box mesh
+    boxMesh = flgmbmNewBox(1, 1, 1);
+    if(!boxMesh){
+        printf("\nFailed to create box");
+        return false;
+    }
+    boxMesh->mat = (flgmbmMat){.diffTexID = 0, .specTexID = 0, .shine = 32};
+    float16 boxModellv = MatrixToFloatV(MatrixIdentity());
+    flgmbmSetTransform(boxMesh, &boxModellv, true);
+    flgmbmSetColor(boxMesh, ((Vector3){0.6, 0.6, 0.6}));
 
     //Setup view matrix
 
@@ -131,8 +151,9 @@ bool glpInit(){
     //setup projection matrix
     proj = MatrixPerspective(DEG2RAD*45, glpWindowWidth/(float)glpWindowHeight, 0.1, 100);
 
-    ulLightPos = glGetUniformLocation(progGL.id, "uLightPos");
+    ulLightDir = glGetUniformLocation(progGL.id, "uLightDir");
     ulLightClr = glGetUniformLocation(progGL.id, "uLightClr");
+    ulHasTex = glGetUniformLocation(progGL.id, "uHasTex");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
@@ -149,15 +170,20 @@ void glpRender(float dt){
 
     static bool rotated = false;
 
-    flmhobOrbitXZ(&view, 3, dt*60*DEG2RAD);
+    if(dirUD) flmhobOrbitYZ(&view, 3, dirUD*dt*60*DEG2RAD);
+    if(dirLR) flmhobOrbitXZ(&view, 3, dirLR*dt*60*DEG2RAD);
 
     glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, flmhobGetViewTransform(&view));
     glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, MatrixToFloat(proj));
     
-    glUniform3f(ulLightPos, 0, 0.5, 0);
+    glUniform3f(ulLightDir, -3, -3, -3);
     glUniform3f(ulLightClr, 1, 1, 1);
     
-    flgmbmDraw(bmesh, progGL);
+    glUniform1i(ulHasTex, GL_TRUE);
+    flgmbmDraw(planeMesh, progGL);
+
+    glUniform1i(ulHasTex, GL_FALSE);
+    flgmbmDraw(boxMesh, progGL);
 
     const char* errstr;
     if(errstr = flglGetError()){
@@ -173,9 +199,13 @@ void glpCleanup(){
         progGL.id = 0;
     }
 
-    if(bmesh){
-        flgmbmFree(bmesh);
-        bmesh = NULL;
+    if(planeMesh){
+        flgmbmFree(planeMesh);
+        planeMesh = NULL;
+    }
+    if(boxMesh){
+        flgmbmFree(boxMesh);
+        boxMesh = NULL;
     }
 
     if(diffTexGL){

@@ -9,6 +9,7 @@
 
 bool Vector3CompareEqual(Vector3 v1, Vector3 v2);
 bool Vector2CompareEqual(Vector2 v1, Vector2 v2);
+#define Vector3MultiplyScalar(v, s) ( (Vector3){(v).x*(s), (v).y*(s), (v).z*(s)} )
 
 typedef struct flmhOrthonormalBasis flmhOrthonormalBasis;
 
@@ -30,7 +31,7 @@ struct flmhOrthonormalBasis{
 
 void flmhobCopy(flmhOrthonormalBasis* dest, flmhOrthonormalBasis src);
 
-flmhOrthonormalBasis flmhobNewPTU(Vector3 pos, Vector3 target, Vector3 up, bool forView);
+flmhOrthonormalBasis flmhobNewPTU(Vector3 pos, Vector3 target, Vector3 up);
 
 void flmhobOrthonormalize(flmhOrthonormalBasis* ob);
 
@@ -46,5 +47,11 @@ void flmhobRotateX(flmhOrthonormalBasis* ob, float angle);
 void flmhobRotateY(flmhOrthonormalBasis* ob, float angle);
 //Perform a local z-axis rotation
 void flmhobRotateZ(flmhOrthonormalBasis* ob, float angle);
+
+void flmhobRotate(flmhOrthonormalBasis* ob, Vector3 axis, float angle);
+
+void flmhobOrbitXZ(flmhOrthonormalBasis* ob, float radius, float angle);
+void flmhobOrbitYZ(flmhOrthonormalBasis* ob, float radius, float angle);
+void flmhobOrbitXY(flmhOrthonormalBasis* ob, float radius, float angle);
 
 #endif

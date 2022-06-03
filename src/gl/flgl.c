@@ -172,7 +172,7 @@ static void flglspSetupUniforms(flglShaderProgram* sp){
     sp->ulMatDiff = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATDIFF);
     sp->ulMatSpec = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSPEC);
     sp->ulMatShine = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSHINE);
-    sp->ulMeshClr = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MESHCLR);
+    sp->ulClr = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_CLR);
 }
 
 flglShaderProgram flglspNew(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD){

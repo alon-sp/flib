@@ -106,12 +106,12 @@ void flgmbmDraw(flgmBasicMesh* mesh, flglShaderProgram shaderProgram);
 //void flgmbmComputeVertexNormals(flgmBasicMesh* mesh);
 
 flgmBasicMesh* flgmbmNewRectangle(GLuint width, GLuint height, uint8_t vtxdFlags);
+flgmBasicMesh* flgmbmNewBox(GLuint width, GLuint height, GLuint breadth);
 
 /*==========================================Utils==========================================*/
 //-------------------------------------------------------------------------------------------
 void* flgmComputeVertexNormal(
     const GLfloat* vtxs, GLuint vtxsStride, GLfloat* normDest, GLuint normDestStride, 
     const GLuint* indexes, GLuint indexesLen  );
-
 
 #endif

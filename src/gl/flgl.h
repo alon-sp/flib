@@ -24,7 +24,7 @@
 #define FLGL_UNIFORM_NAME_MODEL      "uModel"
 #define FLGL_UNIFORM_NAME_VIEW       "uView"
 #define FLGL_UNIFORM_NAME_PROJ       "uProj"
-#define FLGL_UNIFORM_NAME_MESHCLR    "uMeshClr"
+#define FLGL_UNIFORM_NAME_CLR        "uClr"
 #define FLGL_UNIFORM_NAME_MATDIFF    "uMat.diff"
 #define FLGL_UNIFORM_NAME_MATSPEC    "uMat.spec"
 #define FLGL_UNIFORM_NAME_MATSHINE   "uMat.shine"
@@ -84,7 +84,7 @@ flLog* flglGetProgramInfolog(GLuint program);
 typedef struct flglShaderProgram flglShaderProgram;
 struct flglShaderProgram{
     GLuint id;
-    GLint ulModel, ulView, ulProj, ulMeshClr; //ul -> uniform location
+    GLint ulModel, ulView, ulProj, ulClr; //ul -> uniform location
     GLint ulMatDiff, ulMatSpec, ulMatShine;
 };
 #define flglspInit() {  .id = 0, .ulModel = -1, .ulView = -1, .ulProj = -1,\

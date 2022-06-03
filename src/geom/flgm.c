@@ -215,8 +215,8 @@ void flgmbmDraw(flgmBasicMesh* bm, flglShaderProgram shaderProgram){
     if(bm->transform_ && shaderProgram.ulModel >= 0){
         glUniformMatrix4fv(shaderProgram.ulModel, 1, false, bm->transform_->v);
     }
-    if(bm->colorEnabled && shaderProgram.ulMeshClr >= 0){
-        glUniform3f(shaderProgram.ulMeshClr, bm->color.x, bm->color.y, bm->color.z);
+    if(bm->colorEnabled && shaderProgram.ulClr >= 0){
+        glUniform3f(shaderProgram.ulClr, bm->color.x, bm->color.y, bm->color.z);
     }
     
     glBindVertexArray(bm->vaoID);
@@ -232,27 +232,28 @@ flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, uint8_t vtxdFlags){
     if(!flgmbmVtxdIsSupported(vtxdFlags)) return NULL;
 
     //Setup vertices for a rectangle centre about the origin of the x-y plane
-    GLfloat rectVtxs[4*3] = {
+    #define _fltShVtxCount 4
+    GLfloat shVtxs[_fltShVtxCount*3] = {
           w/2.0f,    h/2.0f,  0, //top right corner vertex
         -(w/2.0f),   h/2.0f,  0, //top left corner vertex
         -(w/2.0f), -(h/2.0f), 0, //bottom left corner vertex
           w/2.0f,  -(h/2.0f), 0  //bottom right corner vertex
     };
-    #define _fltmpRectVtxCount 4
+
     //rectangle indexes
-    GLuint rectIndexes[] = {
+    GLuint shIndexes[] = {
         0, 1, 2,
         2, 3, 0
     };
 
     //Allocate large enough memory that can contain maximum vertex data
-    GLfloat rectVtxd[_fltmpRectVtxCount*(3/*POS*/ + 3/*NORM*/ + 2/*TEXCOORD*/)];
+    GLfloat shVtxd[_fltShVtxCount*(3/*POS*/ + 3/*NORM*/ + 2/*TEXCOORD*/)];
     
-    //Write all vertex data into $rectVtxd
+    //Write all vertex data into $shVtxd
     //------------------------------------
         //position data
     if(vtxdFlags & flgmbmVTXD_POS){
-        memcpy(rectVtxd, rectVtxs, sizeof(rectVtxs));
+        memcpy(shVtxd, shVtxs, sizeof(shVtxs));
     }
         //normal data
     //Vertex normals will be automatically computed
@@ -260,21 +261,86 @@ flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, uint8_t vtxdFlags){
         //texture coordinate
     if(vtxdFlags & flgmbmVTXD_TEXCOORD){
         //Setup texture coordinate for rectangle using openGL texture coordinate system
-        GLfloat rectTexCoords[_fltmpRectVtxCount*2/*floats per texture coord*/] = {
+        GLfloat shTexCoords[_fltShVtxCount*2/*floats per texture coord*/] = {
             1, 1, //top right corner vertex
             0, 1, //top left corner vertex
             0, 0, //bottom left corner vertex
             1, 0  //bottom right corner vertex
         };
-        memcpy(rectVtxd+flgmbmGetIndex(vtxdFlags, flgmbmVTXD_TEXCOORD, _fltmpRectVtxCount),
-            rectTexCoords, sizeof(rectTexCoords));
+        memcpy(shVtxd+flgmbmGetIndex(vtxdFlags, flgmbmVTXD_TEXCOORD, _fltShVtxCount),
+            shTexCoords, sizeof(shTexCoords));
     }
     //--
 
-    return flgmbmNew(rectVtxd, flgmbmGetVtxdLen(vtxdFlags, _fltmpRectVtxCount), _fltmpRectVtxCount,
-    vtxdFlags, rectIndexes, sizeof(rectIndexes)/sizeof(*rectIndexes), false);
+    return flgmbmNew(shVtxd, flgmbmGetVtxdLen(vtxdFlags, _fltShVtxCount), _fltShVtxCount,
+    vtxdFlags, shIndexes, sizeof(shIndexes)/sizeof(*shIndexes), false);
 
-    #undef _fltmpRectVtxCount
+    #undef _fltShVtxCount
+}
+
+flgmBasicMesh* flgmbmNewBox(GLuint w, GLuint h, GLuint b){
+    //Setup vertices for a box centre about the origin(openGL RHS) such that:
+    //w is along the x-axis, h is along the y-axis, b is along the z-axis
+    #define _fltShVtxCount 24
+    GLfloat shVtxs[_fltShVtxCount*3] = {
+        //TOP FACE
+          w/2.0f ,    h/2.0f,  -(b/2.0f), //top right corner back vertex
+        -(w/2.0f),    h/2.0f,  -(b/2.0f), //top left corner back vertex
+        -(w/2.0f),    h/2.0f,    b/2.0f , //top left corner front vertex
+          w/2.0f ,    h/2.0f,    b/2.0f , //top right corner front vertex
+        //BOTTOM FACE
+          w/2.0f ,  -(h/2.0f), -(b/2.0f), //bottom right corner back vertex
+        -(w/2.0f),  -(h/2.0f), -(b/2.0f), //bottom left corner back vertex
+        -(w/2.0f),  -(h/2.0f),   b/2.0f , //bottom left corner front vertex
+          w/2.0f ,  -(h/2.0f),   b/2.0f , //bottom right corner front vertex
+
+        //LEFT FACE
+        -(w/2.0f),    h/2.0f,    b/2.0f ,
+        -(w/2.0f),    h/2.0f,  -(b/2.0f),
+        -(w/2.0f),  -(h/2.0f), -(b/2.0f),
+        -(w/2.0f),  -(h/2.0f),   b/2.0f ,
+        //RIGHT FACE
+          w/2.0f ,    h/2.0f,    b/2.0f ,
+          w/2.0f ,    h/2.0f,  -(b/2.0f),
+          w/2.0f ,  -(h/2.0f), -(b/2.0f),
+          w/2.0f ,  -(h/2.0f),   b/2.0f ,
+
+        //BACK FACE
+          w/2.0f ,    h/2.0f,  -(b/2.0f),
+        -(w/2.0f),    h/2.0f,  -(b/2.0f),
+        -(w/2.0f),  -(h/2.0f), -(b/2.0f),
+          w/2.0f ,  -(h/2.0f), -(b/2.0f),
+        //FRONT FACE
+          w/2.0f ,    h/2.0f,    b/2.0f ,
+        -(w/2.0f),    h/2.0f,    b/2.0f ,
+        -(w/2.0f),  -(h/2.0f),   b/2.0f ,
+          w/2.0f ,  -(h/2.0f),   b/2.0f 
+    };
+    //box indexes
+    GLuint shIndexes[] = {
+        0,  1,  2,  2,  3,  0,  //TOP FACE
+        4,  5,  6,  6,  7,  4,  //BOTTOM FACE
+        8,  9,  10, 10, 11, 8, //LEFT FACE
+        12, 13, 14, 14, 15, 12, //RIGHT FACE
+        16, 17, 18, 18, 19, 16, //BACK FACE
+        20, 21, 22, 22, 23, 20  //FRONT FACE
+    };
+
+    //Allocate large enough memory that can contain maximum vertex data
+    GLfloat shVtxd[_fltShVtxCount*(3/*POS*/ + 3/*NORM*/)];
+
+    //Write all vertex data into allocated memory
+    //------------------------------------
+        //position data
+    memcpy(shVtxd, shVtxs, sizeof(shVtxs));
+        //normal data
+    //Vertex normals will be automatically computed
+
+    uint8_t vtxdFlags = flgmbmVTXD_POS|flgmbmVTXD_NORM;
+    return flgmbmNew(shVtxd, flgmbmGetVtxdLen(vtxdFlags, _fltShVtxCount), _fltShVtxCount,
+    vtxdFlags, shIndexes, sizeof(shIndexes)/sizeof(*shIndexes), false);
+
+    #undef _fltShVtxCount
 }
 
 void* flgmComputeVertexNormal(

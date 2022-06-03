@@ -32,6 +32,7 @@ add_subdirectory( "${PROJECT_SOURCE_DIR}/_testProg/glRect" )
 add_subdirectory( "${PROJECT_SOURCE_DIR}/_testProg/glTexture" )
 add_subdirectory( "${PROJECT_SOURCE_DIR}/_testProg/glBmRect" )
 add_subdirectory( "${PROJECT_SOURCE_DIR}/_testProg/glBmLplane" )
+add_subdirectory( "${PROJECT_SOURCE_DIR}/_testProg/glBmCube" )
 
 add_compile_definitions(_FLIB_DEBUG_)
 
