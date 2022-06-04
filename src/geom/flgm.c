@@ -319,10 +319,10 @@ flgmBasicMesh* flgmbmNewBox(GLuint w, GLuint h, GLuint b){
     //box indexes
     GLuint shIndexes[] = {
         0,  1,  2,  2,  3,  0,  //TOP FACE
-        4,  5,  6,  6,  7,  4,  //BOTTOM FACE
+        4,  7,  6,  6,  5,  4,  //BOTTOM FACE
         8,  9,  10, 10, 11, 8, //LEFT FACE
-        12, 13, 14, 14, 15, 12, //RIGHT FACE
-        16, 17, 18, 18, 19, 16, //BACK FACE
+        12, 15, 14, 14, 13, 12, //RIGHT FACE
+        16, 19, 18, 18, 17, 16, //BACK FACE 
         20, 21, 22, 22, 23, 20  //FRONT FACE
     };
 

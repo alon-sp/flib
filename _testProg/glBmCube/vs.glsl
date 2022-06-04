@@ -6,7 +6,6 @@ in vec2 vtxTexCoord;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProj;
-uniform bool uHasTex;
 
 out vec3 fragNorm;
 out vec3 fragPos;
@@ -17,5 +16,5 @@ void main(){
     
     fragPos = vec3( uView*uModel*vec4(vtxPos, 1.0f) );
     fragNorm = vec3( uView*uModel*vec4(vtxNorm, 0.0f) );
-    if(uHasTex) fragTexCoord = vtxTexCoord;
+    fragTexCoord = vtxTexCoord;
 }

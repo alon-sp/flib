@@ -113,3 +113,9 @@ void flmhobOrbitXY(flmhOrthonormalBasis* ob, float radius, float angle){
     flmhobRotateZ(ob, angle);
     flmhobSetPos(ob, Vector3Add(center, Vector3Negate(Vector3MultiplyScalar(ob->z, radius))));
 }
+
+void flmhobOrbitLR(flmhOrthonormalBasis* ob, float radius, float angle){
+    Vector3 sphereCenter = Vector3Subtract(ob->pos, Vector3Negate(Vector3MultiplyScalar(ob->z, radius)));
+    flmhobRotateGY(ob, angle);
+    flmhobSetPos(ob, Vector3Add(sphereCenter, Vector3Negate(Vector3MultiplyScalar(ob->z, radius))));
+}

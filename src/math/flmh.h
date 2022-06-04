@@ -49,9 +49,15 @@ void flmhobRotateY(flmhOrthonormalBasis* ob, float angle);
 void flmhobRotateZ(flmhOrthonormalBasis* ob, float angle);
 
 void flmhobRotate(flmhOrthonormalBasis* ob, Vector3 axis, float angle);
+#define flmhobRotateGX(ob, angle) flmhobRotate(ob, (Vector3){1, 0, 0}, angle)
+#define flmhobRotateGY(ob, angle) flmhobRotate(ob, (Vector3){0, 1, 0}, angle)
+#define flmhobRotateGZ(ob, angle) flmhobRotate(ob, (Vector3){0, 0, 1}, angle)
 
 void flmhobOrbitXZ(flmhOrthonormalBasis* ob, float radius, float angle);
 void flmhobOrbitYZ(flmhOrthonormalBasis* ob, float radius, float angle);
 void flmhobOrbitXY(flmhOrthonormalBasis* ob, float radius, float angle);
+
+void flmhobOrbitLR(flmhOrthonormalBasis* ob, float radius, float angle);
+#define flmhobOrbitUD(ob, radius, angle) flmhobOrbitYZ(ob, radius, angle)
 
 #endif

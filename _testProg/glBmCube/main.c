@@ -75,10 +75,6 @@ int main(int argc, const char** argv){
         startMillis = SDL_GetTicks();
     }
 
-    // float tmp[3] = {0.1, 0.2, 0.3};
-    // Vector3 tmpS = *(Vector3*)tmp;
-    // printf("\ntmps: %f, %f, %f", tmpS.x, tmpS.y, tmpS.z);
-
     //Perform cleanup operations
     //--------------------------
 
@@ -94,13 +90,11 @@ int main(int argc, const char** argv){
 //=====================================================================================
 static const char* vsPathGL = "../../../_testProg/glBmCube/vs.glsl";
 static const char* fsPathGL = "../../../_testProg/glBmCube/fs.glsl";
-static const char* tex1PathGL = "../../../_testProg/res/images/clflower.jpg";
 static flglShaderProgram progGL;
-static GLuint diffTexGL;
-static flgmBasicMesh* planeMesh, *boxMesh;
+static flgmBasicMesh *boxMesh;
 static Matrix proj;
 static flmhOrthonormalBasis view;
-static GLint ulLightDir, ulLightClr, ulHasTex;
+static GLint ulLightDir, ulLightClr;
 
 bool glpInit(){
 
@@ -116,29 +110,13 @@ bool glpInit(){
     progGL = flglspNewFromFile(vsPathGL, fsPathGL, &errlog);
     if(!progGL.id) _printfErrlogAndExit(errlog);
 
-    //==Create GL textures
-    diffTexGL = flglGenTextureFromFile(tex1PathGL, &errlog);
-    if(!diffTexGL) _printfErrlogAndExit(errlog);
-
-    //Initialize plane mesh
-    planeMesh = flgmbmNewRectangle(2, 2, flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD);
-    if(!planeMesh){
-        printf("\nFailed to create plane");
-        return false;
-    }
-    planeMesh->mat = (flgmbmMat){.diffTexID = diffTexGL, .specTexID = 0, .shine = 16};
-    //Create a model matrix to rotate the rectangle about the x-axis
-    Matrix planeModel = MatrixRotateX(DEG2RAD*90);
-    float16 planeModelV = MatrixToFloatV(planeModel);
-    flgmbmSetTransform(planeMesh, &planeModelV, true);
-
     //initialize box mesh
     boxMesh = flgmbmNewBox(1, 1, 1);
     if(!boxMesh){
         printf("\nFailed to create box");
         return false;
     }
-    boxMesh->mat = (flgmbmMat){.diffTexID = 0, .specTexID = 0, .shine = 32};
+    boxMesh->mat = (flgmbmMat){.diffTexID = 0, .specTexID = 0, .shine = 8};
     float16 boxModellv = MatrixToFloatV(MatrixIdentity());
     flgmbmSetTransform(boxMesh, &boxModellv, true);
     flgmbmSetColor(boxMesh, ((Vector3){0.6, 0.6, 0.6}));
@@ -153,13 +131,19 @@ bool glpInit(){
 
     ulLightDir = glGetUniformLocation(progGL.id, "uLightDir");
     ulLightClr = glGetUniformLocation(progGL.id, "uLightClr");
-    ulHasTex = glGetUniformLocation(progGL.id, "uHasTex");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
-    glClearColor(0.5, 0.5, 0.5, 1);
+    glClearColor(0.2, 0.2, 0.2, 1);
     
     return true;
+}
+
+static void drawBox(Matrix transf, Vector3 color){
+    float16 transfV = MatrixToFloatV(transf);
+    flgmbmSetTransform(boxMesh, &transfV, false);
+    flgmbmSetColor(boxMesh, color);
+    flgmbmDraw(boxMesh, progGL);
 }
 
 void glpRender(float dt){
@@ -170,20 +154,24 @@ void glpRender(float dt){
 
     static bool rotated = false;
 
-    if(dirUD) flmhobOrbitYZ(&view, 3, dirUD*dt*60*DEG2RAD);
-    if(dirLR) flmhobOrbitXZ(&view, 3, dirLR*dt*60*DEG2RAD);
+    if(dirUD) flmhobOrbitUD(&view, 3, dirUD*dt*60*DEG2RAD);
+    if(dirLR) flmhobOrbitLR(&view, 3, dirLR*dt*60*DEG2RAD);
 
     glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, flmhobGetViewTransform(&view));
     glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, MatrixToFloat(proj));
     
-    glUniform3f(ulLightDir, -3, -3, -3);
+    glUniform3f(ulLightDir, view.z.x, view.z.y, view.z.z);
     glUniform3f(ulLightClr, 1, 1, 1);
     
-    glUniform1i(ulHasTex, GL_TRUE);
-    flgmbmDraw(planeMesh, progGL);
+    //Draw brown box
+    drawBox(MatrixMultiply(MatrixScale(2, 1.0f/64, 2), MatrixTranslate(0, -0.6, 0)), (Vector3){0.6471, 0.3216, 0.1765});
+    //Draw blue box
+    drawBox(MatrixMultiply(MatrixScale(1.0f/32, 0.5f/64, 2), MatrixTranslate(-1, -0.6, 0)), (Vector3){0, 0, 0.5});
+    //Draw green box
+    drawBox(MatrixMultiply(MatrixScale(2, 0.5f/64, 1.0f/32), MatrixTranslate(0, -0.6, 1)), (Vector3){0, 0.5, 0});
 
-    glUniform1i(ulHasTex, GL_FALSE);
-    flgmbmDraw(boxMesh, progGL);
+    //Draw grey box
+    drawBox(MatrixIdentity(), (Vector3){0.6, 0.6, 0.6});
 
     const char* errstr;
     if(errstr = flglGetError()){
@@ -199,17 +187,9 @@ void glpCleanup(){
         progGL.id = 0;
     }
 
-    if(planeMesh){
-        flgmbmFree(planeMesh);
-        planeMesh = NULL;
-    }
     if(boxMesh){
         flgmbmFree(boxMesh);
         boxMesh = NULL;
     }
 
-    if(diffTexGL){
-        glDeleteTextures(1, &diffTexGL);
-        diffTexGL = 0;
-    }
 }
