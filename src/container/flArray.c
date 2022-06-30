@@ -217,14 +217,21 @@ flArray* flarrstrNews(int argc, ...){
     flArray* chArr = flarrstrNewc(0);
     if(!chArr) return NULL;
 
+    bool err = false;
+
     va_list ptr;
     va_start(ptr, argc);
     for(int i = 0; i<argc; i++){
         const char* str = va_arg(ptr, const char*);
-        flarrPushs(chArr, str, strlen(str));
+        if(!flarrPushs(chArr, str, strlen(str))){
+            err = true;
+            break;
+        }
     }
     va_end(ptr);
-    flarrstrPush(chArr, "");
+
+    if(err) flarrPfree(&chArr);
+    else flarrstrPush(chArr, "");
 
     return chArr;
 }

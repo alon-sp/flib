@@ -53,3 +53,19 @@ void* flmemRealloc(void* mptr, flint_t nbytes){
 
     return buf;
 }
+
+//----------Error handling functions---------*/
+
+/**
+ * @brief This callback function is called whenever a critical error occur in any function or module
+ * 
+ */
+static void (*flerrOnError)(const char* errstr) = NULL;
+
+void flerrSetCallback(void (*errorCallback)(const char*)){
+    flerrOnError = errorCallback;
+}
+
+void flerrHandle(const char* errstr){
+    if(flerrOnError) flerrOnError(errstr);
+}

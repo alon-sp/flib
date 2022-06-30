@@ -5,7 +5,6 @@
 #include"fl.h"
 
 #include"_flArray.h"
-#include"./entity/_flEntity.h"
 #include"_flfil.h"
 #include"_flgm.h"
 
@@ -20,11 +19,6 @@ int main(int argc, char** argv){
     printf("\nRunning flArray tests\n----------");
     if(_flarrRunTests()){
         printf("\n$_flarrRunTest: TEST OK\n");
-    }
-
-    printf("\nRunning flEntity tests\n----------");
-    if(_flentRunTests()){
-        printf("\n$_flentRunTests: TEST OK\n");
     }
 
     printf("\nRunning flfil tests\n----------");

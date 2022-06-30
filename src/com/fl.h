@@ -7,7 +7,6 @@
 #include"flTypes.h"
 #include"flArray.h"
 #include"fllog.h"
-#include"flError.h"
 
 void* flmemMalloc(flint_t nbytes);
 
@@ -20,8 +19,12 @@ void flmemFree(void* mptr);
 
 void* flmemRealloc(void* mptr, flint_t nbytes);
 
-#define flMillis() 0
+/*----------Error handling functions----------*/
+void flerrSetCallback(void (*errorCallback)(const char*));
 
-#define fltmeMillis() flMillis()
+void flerrHandle(const char* errstr);
+
+/*----------utilities----------*/
+#define flcopSet(cop, copValue, copType) ( *(copType*)&(cop) = copValue )
 
 #endif//FLHEADERH_INCLUDED
