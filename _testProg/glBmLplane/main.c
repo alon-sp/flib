@@ -66,7 +66,7 @@ int main(int argc, const char** argv){
     }
 
     // float tmp[3] = {0.1, 0.2, 0.3};
-    // Vector3 tmpS = *(Vector3*)tmp;
+    // flmhVector3 tmpS = *(flmhVector3*)tmp;
     // printf("\ntmps: %f, %f, %f", tmpS.x, tmpS.y, tmpS.z);
 
     //Perform cleanup operations
@@ -87,8 +87,8 @@ static const char* fsPathGL = "../../../_testProg/glBmLplane/fs.glsl";
 static const char* tex1PathGL = "../../../_testProg/res/images/clflower.jpg";
 static flglShaderProgram progGL;
 static GLuint diffTexGL;
-static flgmBasicMesh* bmesh;
-static Matrix proj;
+static flgmMesh* bmesh;
+static flmhMatrix proj;
 static flmhOrthonormalBasis view;
 static GLint ulLightPos, ulLightClr, ulViewPos;
 
@@ -110,26 +110,23 @@ bool glpInit(){
     diffTexGL = flglGenTextureFromFile(tex1PathGL, &errlog);
     if(!diffTexGL) _printfErrlogAndExit(errlog);
 
-    bmesh = flgmbmNewRectangle(2, 2, flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD);
+    bmesh = flgmmsbsRectangleNew(2, 2, flgmmsbsVTXD_POS|flgmmsbsVTXD_NORM|flgmmsbsVTXD_TEXCOORD);
     if(!bmesh){
         printf("\nFailed to create bmesh");
         return false;
     }
     
-    bmesh->mat = (flgmbmMat){.diffTexID = diffTexGL, .specTexID = 0, .shine = 16};
+    bmesh->material = flgmmsmtbsNew(diffTexGL, 0, 16, flmhv3Zero());
 
     //Create a model matrix to rotate the rectangle about the x-axis
-    Matrix model = MatrixRotateX(DEG2RAD*(90-30));
-    float16 modelFv = MatrixToFloatV(model);
-    flgmbmSetTransform(bmesh, &modelFv, true);
+    flmhMatrix model = flmhmtRotateX(DEG2RAD*(90-30));
+    flgmmsSetTransform(bmesh, &model, true);
 
     //Setup view matrix
-
-    flmhobCopy( (flmhOrthonormalBasis*)&view, 
-        flmhobNewPTU( (Vector3){0, 0, 3}, (Vector3){0, 0, 0}, (Vector3){0, 1, 0})  );
+    view = flmhobNewPTU( (flmhVector3){0, 0, 3}, (flmhVector3){0, 0, 0}, (flmhVector3){0, 1, 0});
 
     //setup projection matrix
-    proj = MatrixPerspective(DEG2RAD*45, glpWindowWidth/(float)glpWindowHeight, 0.1, 100);
+    proj = flmhmtPerspective(DEG2RAD*45, glpWindowWidth/(float)glpWindowHeight, 0.1, 100);
 
     ulLightPos = glGetUniformLocation(progGL.id, "uLightPos");
     ulLightClr = glGetUniformLocation(progGL.id, "uLightClr");
@@ -151,13 +148,14 @@ void glpRender(float dt){
 
     flmhobOrbitXZ(&view, 3, dt*60*DEG2RAD);
 
-    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, flmhobGetViewTransform(&view));
-    glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, MatrixToFloat(proj));
+    flmhMatrix vtransf = flmhobGetViewTransform(&view);
+    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, (float*)&vtransf);
+    glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, flmhmtValuePtr(proj));
     
     glUniform3f(ulLightPos, 0, 0.5, 0);
     glUniform3f(ulLightClr, 1, 1, 1);
     
-    flgmbmDraw(bmesh, progGL);
+    flgmmsDraw(bmesh, &progGL);
 
     const char* errstr;
     if(errstr = flglGetError()){
@@ -174,7 +172,7 @@ void glpCleanup(){
     }
 
     if(bmesh){
-        flgmbmFree(bmesh);
+        flgmmsFree(bmesh);
         bmesh = NULL;
     }
 

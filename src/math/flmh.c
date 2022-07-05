@@ -3,29 +3,22 @@
 
 #include"flmh.h"
 
-bool Vector3CompareEqual(Vector3 v1, Vector3 v2){
+bool flmhv3CompareEqual(flmhVector3 v1, flmhVector3 v2){
     return
         fabs( v1.x - v2.x ) <= flmEPSILON && 
         fabs( v1.y - v2.y ) <= flmEPSILON && 
         fabs( v1.z - v2.z ) <= flmEPSILON  ;
 }
 
-bool Vector2CompareEqual(Vector2 v1, Vector2 v2){
+bool flmhv2CompareEqual(flmhVector2 v1, flmhVector2 v2){
     return
         fabs( v1.x - v2.x ) <= flmEPSILON && 
         fabs( v1.y - v2.y ) <= flmEPSILON ;
 }
 
-void flmhobCopy(flmhOrthonormalBasis* dest, flmhOrthonormalBasis src){
-    memcpy(dest, &src, sizeof(src));
-}
+flmhOrthonormalBasis flmhobNewPTU(flmhVector3 pos, flmhVector3 target, flmhVector3 up){
 
-flmhOrthonormalBasis flmhobNewPTU(Vector3 pos, Vector3 target, Vector3 up){
-
-    flmhOrthonormalBasis ob = flmhobInit();
-    flmhobSetPos(&ob, pos);
-    _flmhobSetY(&ob, up);
-    _flmhobSetZ(&ob, Vector3Subtract(target, pos) );
+    flmhOrthonormalBasis ob = { .pos = pos, .y = up, .z = flmhv3Subtract(target, pos) };
 
     flmhobOrthonormalize(&ob);
 
@@ -33,89 +26,89 @@ flmhOrthonormalBasis flmhobNewPTU(Vector3 pos, Vector3 target, Vector3 up){
 }
 
 void flmhobOrthonormalize(flmhOrthonormalBasis* ob){
-    _flmhobSetZ(ob, Vector3Normalize(ob->z));
-    _flmhobSetX(ob, Vector3Normalize(Vector3CrossProduct(ob->y, ob->z))  );
-    _flmhobSetY(ob,  Vector3Normalize(Vector3CrossProduct(ob->z, ob->x)) );
+    ob->z =  flmhv3Normalize(ob->z);
+    ob->x =  flmhv3Normalize(flmhv3CrossProduct(ob->y, ob->z)) ;
+    ob->y =   flmhv3Normalize(flmhv3CrossProduct(ob->z, ob->x));
 }
 
-float16 _flmhobGetTransform(flmhOrthonormalBasis* ob){
-    Vector3 X = ob->x, Y = ob->y, Z = ob->z, T = ob->pos;
+flmhMatrix flmhobGetTransform(flmhOrthonormalBasis* ob){
+    flmhVector3 X = ob->x, Y = ob->y, Z = ob->z, T = ob->pos;
 
-    return (float16){.v = {
+    return (flmhMatrix){
         X.x, X.y, X.z, 0,
         Y.x, Y.y, Y.z, 0,
         Z.x, Z.y, Z.z, 0,
         T.x, T.y, T.z, 1
-    }};
+    };
 }
 
-float16 _flmhobGetViewTransform(flmhOrthonormalBasis* ob){
+flmhMatrix flmhobGetViewTransform(flmhOrthonormalBasis* ob){
 
     #define _fltDot(v1, v2) ((v1).x*(v2).x + (v1).y*(v2).y + (v1).z*(v2).z)
 
-    Vector3 X = ob->x, Y = ob->y, Z = ob->z, T = ob->pos;
+    flmhVector3 X = ob->x, Y = ob->y, Z = ob->z, T = ob->pos;
 
     //This is the result of translating the basis to the origin, performing an inverse(transpose)
     //transform on the orthogonal matrix form by the basis and writing the result using column
     //major odering.
-    return (float16){.v = {
+    return (flmhMatrix){
          -X.x,            Y.x,            -Z.x,            0,
          -X.y,            Y.y,            -Z.y,            0,
          -X.z,            Y.z,            -Z.z,            0,
          _fltDot(X, T),  -_fltDot(Y, T),  _fltDot(Z, T),   1
-    }};
+    };
 
     #undef _fltDot
 }
 
 void flmhobRotateX(flmhOrthonormalBasis* ob, float angle){
-    Matrix rmat = MatrixRotate(ob->x, angle);
-    _flmhobSetY(ob, Vector3Transform(ob->y, rmat));
-    _flmhobSetZ(ob, Vector3Transform(ob->z, rmat));
+    Matrix rmat = flmhmtRotate(ob->x, angle);
+    ob->y =  flmhv3Transform(ob->y, rmat);
+    ob->z =  flmhv3Transform(ob->z, rmat);
 }
 
 void flmhobRotateY(flmhOrthonormalBasis* ob, float angle){
-    Matrix rmat = MatrixRotate(ob->y, angle);
-    _flmhobSetX(ob, Vector3Transform(ob->x, rmat));
-    _flmhobSetZ(ob, Vector3Transform(ob->z, rmat));
+    Matrix rmat = flmhmtRotate(ob->y, angle);
+    ob->x =  flmhv3Transform(ob->x, rmat);
+    ob->z =  flmhv3Transform(ob->z, rmat);
 }
 
 void flmhobRotateZ(flmhOrthonormalBasis* ob, float angle){
-    Matrix rmat = MatrixRotate(ob->z, angle);
-    _flmhobSetX(ob, Vector3Transform(ob->x, rmat));
-    _flmhobSetY(ob, Vector3Transform(ob->y, rmat));
+    Matrix rmat = flmhmtRotate(ob->z, angle);
+    ob->x =  flmhv3Transform(ob->x, rmat);
+    ob->y =  flmhv3Transform(ob->y, rmat);
 }
 
-void flmhobRotate(flmhOrthonormalBasis* ob, Vector3 axis, float angle){
-    Matrix rmat = MatrixRotate(axis, angle);
-    _flmhobSetX(ob, Vector3Transform(ob->x, rmat));
-    _flmhobSetY(ob, Vector3Transform(ob->y, rmat));
-    _flmhobSetZ(ob, Vector3Transform(ob->z, rmat));
+void flmhobRotate(flmhOrthonormalBasis* ob, flmhVector3 axis, float angle){
+    Matrix rmat = flmhmtRotate(axis, angle);
+    ob->x =  flmhv3Transform(ob->x, rmat);
+    ob->y =  flmhv3Transform(ob->y, rmat);
+    ob->z =  flmhv3Transform(ob->z, rmat);
 }
 
 void flmhobOrbitXZ(flmhOrthonormalBasis* ob, float radius, float angle){
-    Vector3 center = Vector3Subtract(ob->pos, Vector3Negate(Vector3MultiplyScalar(ob->z, radius)));
+    flmhVector3 center = flmhv3Subtract(ob->pos, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
 
     flmhobRotateY(ob, angle);
-    flmhobSetPos(ob, Vector3Add(center, Vector3Negate(Vector3MultiplyScalar(ob->z, radius))));
+    ob->pos =  flmhv3Add(center, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
 }
 
 void flmhobOrbitYZ(flmhOrthonormalBasis* ob, float radius, float angle){
-    Vector3 center = Vector3Subtract(ob->pos, Vector3Negate(Vector3MultiplyScalar(ob->z, radius)));
+    flmhVector3 center = flmhv3Subtract(ob->pos, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
 
     flmhobRotateX(ob, angle);
-    flmhobSetPos(ob, Vector3Add(center, Vector3Negate(Vector3MultiplyScalar(ob->z, radius))));
+    ob->pos =  flmhv3Add(center, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
 }
 
 void flmhobOrbitXY(flmhOrthonormalBasis* ob, float radius, float angle){
-    Vector3 center = Vector3Subtract(ob->pos, Vector3Negate(Vector3MultiplyScalar(ob->z, radius)));
+    flmhVector3 center = flmhv3Subtract(ob->pos, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
 
     flmhobRotateZ(ob, angle);
-    flmhobSetPos(ob, Vector3Add(center, Vector3Negate(Vector3MultiplyScalar(ob->z, radius))));
+    ob->pos = flmhv3Add(center, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
 }
 
 void flmhobOrbitLR(flmhOrthonormalBasis* ob, float radius, float angle){
-    Vector3 sphereCenter = Vector3Subtract(ob->pos, Vector3Negate(Vector3MultiplyScalar(ob->z, radius)));
+    flmhVector3 sphereCenter = flmhv3Subtract(ob->pos, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
     flmhobRotateGY(ob, angle);
-    flmhobSetPos(ob, Vector3Add(sphereCenter, Vector3Negate(Vector3MultiplyScalar(ob->z, radius))));
+    ob->pos = flmhv3Add(sphereCenter, flmhv3Negate(flmhv3MultiplyScalar(ob->z, radius)));
 }

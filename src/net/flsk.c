@@ -1,5 +1,18 @@
 #include"flsk.h"
 
+//->flsk
+//==========================================================================================
+
+void flskDefaultRecvCb(flSocket* sok, flskMessage msg){
+    printf("\n->>%d\n", (int)msg.dataLen);
+    char dst[msg.dataLen*2];
+    char* hex = mg_hex(msg.data, msg.dataLen, dst); 
+
+    printf("%s", hex);
+}
+
+//->dvws
+//==========================================================================================
 struct flskDVWS_;
 struct flskdvwsConnection;
 
@@ -43,7 +56,7 @@ flSocket* flskdvwsNew(const char* rootDir, const char* url, flskRecvCb_tf recvCb
 
     *sok = (flSocket){ flSocket_, 
         ._run = flskdvwsRun, ._send = flskdvwsSend, ._closec = flskdvwsClosec,
-        ._free = flskdvwsFree, .recvCb = recvCb, ._ = dvws };
+        ._free = flskdvwsFree, .recvCb = recvCb? recvCb : flskDefaultRecvCb, ._ = dvws };
 
     //->Initialize websocket server
     mg_mgr_init(&dvws->conMgr);// Initialise event manager
@@ -71,6 +84,7 @@ size_t flskdvwsSend(flSocket* sok, flskMessage* msg){
     if(c){
         return mg_ws_send(c->mgCon, msg->data, msg->dataLen, WEBSOCKET_OP_BINARY);
     }
+    return 0;
 }
 
 void flskdvwsClosec(flSocket* sok, flskMessage* msg){
@@ -147,6 +161,9 @@ static void flskdvwsAddCon(flSocket* sok, struct flskdvwsConnection con){
             c->mgCon = NULL; c->dvKey = 0;
 
             nullIndex = i;
+        }else if(c->mgCon == con.mgCon){
+            //This should be an error; but for now we will simply update the existing key
+            c->dvKey = con.dvKey;
         }
     }
 

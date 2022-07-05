@@ -4,13 +4,14 @@ in vec3 fragPos;
 in vec3 fragNorm;
 in vec2 fragTexCoord;
 
-struct BmMat{
+struct BsMat{
     sampler2D diffTex;
     sampler2D specTex;
     float shine;
+    vec3 clr;
 };
 
-uniform BmMat uMat;
+uniform BsMat uMat;
 uniform vec3 uLightPos;
 uniform vec3 uLightClr;
 uniform mat4 uView;

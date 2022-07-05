@@ -1,111 +1,140 @@
 #include"flgm.h"
 
-static bool flgmbmVtxdIsSupported(uint8_t flags){
-    switch(flags){
-        case flgmbmVTXD_POS:
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM:
-        case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
-            return true;
-        default:
-            return false;
+static flgmmsMaterial* flgmmsmtNew();
+static void flgmmsmtbsFree(flgmmsMaterial* mat);
+
+//->flgm
+//==========================================================================================
+void* flgmComputeVertexNormal(
+    const GLfloat* vtxs, GLuint vtxsStride, GLfloat* normDest, GLuint normDestStride, 
+    const GLuint* indexes, GLuint indexesLen  ){
+    //check if data is tightly packed
+    if(!vtxsStride) vtxsStride = 3;//floats
+    if(!normDestStride) normDestStride = 3;//floats
+
+    //Clear $normDest buffer before computing normals
+    for(GLuint i = 0; i<indexesLen; i++){
+        * ((flmhVector3*)(normDest+indexes[i]*normDestStride) ) = flmhv3Zero();
+    }
+
+    //Loop through each triangle(3 indexes that form a face)
+    for(GLuint i = 0; i<indexesLen; i += 3){
+        //Get handle to the 3 vertexes of the triangle
+        const flmhVector3* p0 = (const flmhVector3*)(vtxs+indexes[i+0]*vtxsStride);
+        const flmhVector3* p1 = (const flmhVector3*)(vtxs+indexes[i+1]*vtxsStride);
+        const flmhVector3* p2 = (const flmhVector3*)(vtxs+indexes[i+2]*vtxsStride);
+        //Compute the triangle normal using p0, p1 and p2
+        flmhVector3 tnorm = flmhv3CrossProduct(flmhv3Subtract(*p1, *p0), flmhv3Subtract(*p2, *p0));
+        //Update the corresponding normals of the vertexes in $normDest
+        *( (flmhVector3*)(normDest+indexes[i+0]*normDestStride) ) = flmhv3Add(
+                *(flmhVector3*)(normDest+indexes[i+0]*normDestStride), tnorm  );
+        *( (flmhVector3*)(normDest+indexes[i+1]*normDestStride) ) = flmhv3Add(
+                *(flmhVector3*)(normDest+indexes[i+1]*normDestStride), tnorm  );
+        *( (flmhVector3*)(normDest+indexes[i+2]*normDestStride) ) = flmhv3Add(
+                *(flmhVector3*)(normDest+indexes[i+2]*normDestStride), tnorm  );
+    }
+
+    //Normalize computed normals in $normDest buffer
+    for(GLuint i = 0; i<indexesLen; i++){
+        *( (flmhVector3*)(normDest+indexes[i]*normDestStride) ) = flmhv3Normalize(
+                *(flmhVector3*)(normDest+indexes[i]*normDestStride)  );
     }
 }
 
-// static GLuint flgmbmGetStride(uint8_t vtxdFlags){
-//     switch(vtxdFlags){
-//         case flgmbmVTXD_POS:
-//             return 3;
-//         case flgmbmVTXD_POS|flgmbmVTXD_NORM:
-//         case flgmbmVTXD_POS:
-//             return 3+3;
-//         case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
-//             return 3+2;
-//         case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
-//             return 3+3+2;
-//         case flgmbmVTXD_POS|flgmbmVTXD_NORM:
-//             return 3+3+3;
-//         case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
-//             return 3+2+3;
-//         case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
-//             return 3+3+2+3;
-//     }
-//     return 0;
-// }
+//->flgmMesh
+//==========================================================================================
+static flutImplNew(flgmmsNew, flgmMesh, flgmms_)
 
-static GLuint flgmbmGetIndex(uint8_t vtxdFlags, uint8_t targetFlag, GLuint vtxCount){
-    switch(vtxdFlags){
-        case flgmbmVTXD_POS:
-            break;
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM:
-        case flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD:
-            if(targetFlag != flgmbmVTXD_POS) return 3*vtxCount;
-            break;
-        
-        case flgmbmVTXD_POS|flgmbmVTXD_NORM|flgmbmVTXD_TEXCOORD:
-            if(targetFlag == flgmbmVTXD_NORM) return 3*vtxCount;
-            if(targetFlag == flgmbmVTXD_TEXCOORD) return (3*2)*vtxCount;
-            break;
+void flgmmsFree(flgmMesh* mesh){
+    if(!mesh) return;
+    if(mesh->_free) mesh->_free(mesh);
+
+    if(mesh->_transfc){
+        flmmFree(mesh->_transfc);
+        mesh->_transfc = NULL;
     }
 
-    return 0;
+    if(mesh->material){
+        flgmmsmtFree(mesh->material);
+        mesh->material = NULL;
+    }
+
+    flmmFree(mesh);
 }
 
-static GLuint flgmbmGetVtxdLen(uint8_t vtxdFlags, GLuint vtxCount){
-    GLuint activeFlagsFloatCount = 0;
-    if(vtxdFlags & flgmbmVTXD_POS) activeFlagsFloatCount += 3;
-    if(vtxdFlags & flgmbmVTXD_NORM) activeFlagsFloatCount += 3;
-    if(vtxdFlags & flgmbmVTXD_TEXCOORD) activeFlagsFloatCount += 2;
+void flgmmsSetTransform(flgmMesh* mesh, flmhMatrix* transform, bool saveCopy){
+    if(saveCopy){
+        if(!mesh->_transfc){
+            mesh->_transfc = flmmMalloc(sizeof(flmhMatrix));
+            if(!mesh->_transfc) goto SET_TRANSFORM;
+        }
+        *mesh->_transfc = *transform;
+    }
 
-    return activeFlagsFloatCount * vtxCount;
+SET_TRANSFORM:
+    mesh->transform =  (saveCopy && mesh->_transfc)? mesh->_transfc : transform;
 }
 
-flgmBasicMesh* flgmbmNewBU(  
+//->flgmmsBasic
+//==========================================================================================
+
+static void flgmmsbsFree(flgmMesh* mesh);
+static void flgmmsbsDraw(flgmMesh* mesh, flglShaderProgram* prog);
+static bool flgmmsbsVtxdIsSupported(uint8_t flags);
+static GLuint flgmmsbsGetIndex(uint8_t vtxdFlags, uint8_t targetFlag, GLuint vtxCount);
+static GLuint flgmmsbsGetVtxdLen(uint8_t vtxdFlags, GLuint vtxCount);
+
+flgmMesh* flgmmsbsNew(  
     GLfloat* vertexData, const GLuint vertexDataLen, GLuint vertexCount, uint8_t vtxdFlags,
      const GLuint* indexes, const GLuint indexesLen, bool saveData, 
      GLenum vboUsage, GLenum iboUsage ){
     
     if( !(vertexData && indexes && vertexDataLen && indexesLen) ) return NULL;
-    if( !flgmbmVtxdIsSupported(vtxdFlags) ) return NULL;
+    if( !flgmmsbsVtxdIsSupported(vtxdFlags) ) return NULL;
 
-    flgmBasicMesh* bm = flmemMalloc(sizeof(flgmBasicMesh));
+    flgmmsBasic* bm = flmmMalloc(sizeof(flgmmsBasic));
+    if(!bm) return NULL;
 
     if(saveData){
-        GLfloat* vtxdBuf = flmemMalloc(vertexDataLen*sizeof(GLfloat));
+        GLfloat* vtxdBuf = flmmMalloc(vertexDataLen*sizeof(GLfloat));
+        if(!vtxdBuf){
+            flmmFree(bm);
+            return NULL;
+        }
         memcpy(vtxdBuf, vertexData, vertexDataLen*sizeof(GLfloat));
 
-        GLuint* indxBuf = flmemMalloc(indexesLen*sizeof(GLuint));
+        GLuint* indxBuf = flmmMalloc(indexesLen*sizeof(GLuint));
+        if(!indxBuf){
+            flmmFree(bm);
+            flmmFree(vtxdBuf);
+            return NULL;
+        }
         memcpy(indxBuf, indexes, indexesLen*sizeof(GLuint));
 
-        _flgmbmSetVtxd(bm, vtxdBuf, vertexDataLen, vertexCount, vtxdFlags);
-        _flgmbmSetIndexes(bm, indxBuf, indexesLen);
+        _flgmmsbsSetVtxd(bm, vtxdBuf, vertexDataLen, vertexCount, vtxdFlags);
+        _flgmmsbsSetIndexes(bm, indxBuf, indexesLen);
     }else{
-        _flgmbmSetVtxd(bm, vertexData, vertexDataLen, vertexCount, vtxdFlags);
-        _flgmbmSetIndexes(bm, indexes, indexesLen);
+        _flgmmsbsSetVtxd(bm, vertexData, vertexDataLen, vertexCount, vtxdFlags);
+        _flgmmsbsSetIndexes(bm, indexes, indexesLen);
     }
 
-    _flgmbmSetTransform(bm, NULL);
-    _flgmbmSetTransformBuf(bm, NULL);
-    _flgmbmSetType(bm, flgmbmTYPE_NIL);
-    _flgmbmSetColorEnabled(bm, false);
-    bm->mat = (flgmbmMat)flgmbmMatInit();
-    flgmbmSetVboID(bm, 0);
-    flgmbmSetIboID(bm, 0);
-    flgmbmSetVaoID(bm, 0);
+    flgmmsbsSetVboID(bm, 0);
+    flgmmsbsSetIboID(bm, 0);
+    flgmmsbsSetVaoID(bm, 0);
 
     #define _fltmpFlagIsSet(_bm, targetFlag) ( (_bm)->vtxdFlags & (targetFlag) )
     
-    if(_fltmpFlagIsSet(bm, flgmbmVTXD_NORM)){
+    if(_fltmpFlagIsSet(bm, flgmmsbsVTXD_NORM)){
         flgmComputeVertexNormal(  bm->vtxd, 0, 
-            (GLfloat*)bm->vtxd + flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_NORM, bm->vtxCount), 
+            (GLfloat*)bm->vtxd + flgmmsbsGetIndex(bm->vtxdFlags, flgmmsbsVTXD_NORM, bm->vtxCount), 
             0, bm->indexes, bm->indexesLen  );
     }
 
     //Generate GL buffers
-    flgmbmSetVboID( bm, 
+    flgmmsbsSetVboID( bm, 
         flglGenBuffer(GL_ARRAY_BUFFER, bm->vtxdLen * sizeof(*bm->vtxd), bm->vtxd, vboUsage)  );
 
-    flgmbmSetIboID(bm, 
+    flgmmsbsSetIboID(bm, 
         flglGenBuffer(GL_ELEMENT_ARRAY_BUFFER, bm->indexesLen * sizeof(*bm->indexes),
             bm->indexes, iboUsage
         ));
@@ -113,28 +142,28 @@ flgmBasicMesh* flgmbmNewBU(
     //Generate GL vertex Array object
     GLuint vao;
     glGenVertexArrays(1, &vao);
-    flgmbmSetVaoID(bm, vao);
+    flgmmsbsSetVaoID(bm, vao);
 
     //Configure GL buffers
     //--------------------
     glBindVertexArray(bm->vaoID);
     glBindBuffer(GL_ARRAY_BUFFER, bm->vboID);
     //position attribute
-    if(_fltmpFlagIsSet(bm, flgmbmVTXD_POS)){
-        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXPOS, 3, GL_FLOAT, false,  0, 
-            (GLvoid*)(flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_POS, bm->vtxCount)*sizeof(*bm->vtxd))  );
+    if(_fltmpFlagIsSet(bm, flgmmsbsVTXD_POS)){
+        glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXPOS, 3, GL_FLOAT, false,  0,
+            (GLvoid*)(flgmmsbsGetIndex(bm->vtxdFlags, flgmmsbsVTXD_POS, bm->vtxCount)*sizeof(*bm->vtxd))  );
         glEnableVertexAttribArray(FLGL_ATTRIBLOC_VTXPOS);
     }
     //normal attribute
-    if(_fltmpFlagIsSet(bm, flgmbmVTXD_NORM)){
+    if(_fltmpFlagIsSet(bm, flgmmsbsVTXD_NORM)){
         glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXNORM, 3, GL_FLOAT, false, 0, 
-            (GLvoid*)(flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_NORM, bm->vtxCount)*sizeof(*bm->vtxd))  );
+            (GLvoid*)(flgmmsbsGetIndex(bm->vtxdFlags, flgmmsbsVTXD_NORM, bm->vtxCount)*sizeof(*bm->vtxd))  );
         glEnableVertexAttribArray(FLGL_ATTRIBLOC_VTXNORM);
     }
     //texture coordinate
-    if(_fltmpFlagIsSet(bm, flgmbmVTXD_TEXCOORD)){
+    if(_fltmpFlagIsSet(bm, flgmmsbsVTXD_TEXCOORD)){
         glVertexAttribPointer(  FLGL_ATTRIBLOC_VTXTEXCOORD, 2, GL_FLOAT, false,  0, 
-            (GLvoid*)(flgmbmGetIndex(bm->vtxdFlags, flgmbmVTXD_TEXCOORD, bm->vtxCount)*sizeof(*bm->vtxd))  );
+            (GLvoid*)(flgmmsbsGetIndex(bm->vtxdFlags, flgmmsbsVTXD_TEXCOORD, bm->vtxCount)*sizeof(*bm->vtxd))  );
         glEnableVertexAttribArray(FLGL_ATTRIBLOC_VTXTEXCOORD);
     }
 
@@ -147,89 +176,139 @@ flgmBasicMesh* flgmbmNewBU(
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     if(!saveData){
-        _flgmbmSetVtxd(bm, NULL, 0, 0, bm->vtxdFlags);
-        _flgmbmSetIndexes(bm, NULL, bm->indexesLen);//@note: storing the index buffer
+        _flgmmsbsSetVtxd(bm, NULL, 0, 0, bm->vtxdFlags);
+        _flgmmsbsSetIndexes(bm, NULL, bm->indexesLen);//@note: storing the index buffer
             //length despise setting it to NULL is important since it will be use later in
             //drawing the mesh(in call to glDrawElements)
     }
-    return bm;
+    
+    //Mesh object
+    flgmMesh* mesh = flgmmsNew();
+    if(mesh){
+        mesh->_ = bm;
+        mesh->_free = flgmmsbsFree;
+        mesh->_draw = flgmmsbsDraw;
+    }else{
+        flgmMesh ms = (flgmMesh){flgmms_, ._ = bm};
+        flgmmsbsFree(&ms);
+    }
+
+    return mesh;
 
 #undef _fltmpFlagIsSet
 }
 
-void flgmbmFree(flgmBasicMesh* bm){
+static void flgmmsbsFree(flgmMesh* mesh){
+    flgmmsBasic* bm = flgmmsbs(mesh);
+
     if(!bm) return;
 
     if(bm->vtxd){
-        flmemFree((void*)bm->vtxd);
-        _flgmbmSetVtxd(bm, NULL, 0, 0, 0);
+        flmmFree((void*)bm->vtxd);
+        _flgmmsbsSetVtxd(bm, NULL, 0, 0, 0);
     }
     if(bm->indexes){
-        flmemFree((void*)bm->indexes);
-        _flgmbmSetIndexes(bm, NULL, 0);
+        flmmFree((void*)bm->indexes);
+        _flgmmsbsSetIndexes(bm, NULL, 0);
     }
 
     if(bm->vboID){
         glDeleteBuffers(1, &bm->vboID);
-        flgmbmSetVboID(bm, 0);
+        flgmmsbsSetVboID(bm, 0);
     }
     if(bm->iboID){
         glDeleteBuffers(1, &bm->iboID);
-        flgmbmSetIboID(bm, 0);
+        flgmmsbsSetIboID(bm, 0);
     }
     if(bm->vaoID){
         glDeleteVertexArrays(1, &bm->vaoID);
-        flgmbmSetVaoID(bm, 0);
+        flgmmsbsSetVaoID(bm, 0);
     }
 
-    if(bm->_transformBuf){
-        flmemFree((void*)bm->_transformBuf);
-        _flgmbmSetTransformBuf(bm, NULL);
-    }
+    flmmFree(bm);
+    mesh->_ = NULL;
+
 }
 
-void flgmbmSetTransform(flgmBasicMesh* bm, float16* transform, bool saveCopy){
-    if(saveCopy){
-        if(!bm->_transformBuf) _flgmbmSetTransformBuf(bm, flmemMalloc(sizeof(float16)));
-        *(float16*)bm->_transformBuf = *transform;
-    }
-    _flgmbmSetTransform(bm, saveCopy?bm->_transformBuf : transform);
-}
+static void flgmmsbsDraw(flgmMesh* mesh, flglShaderProgram* prog){
+    if(!(mesh->_draw == flgmmsbsDraw && mesh->material->_free == flgmmsmtbsFree)) return;
 
-void flgmbmDraw(flgmBasicMesh* bm, flglShaderProgram shaderProgram){
-    if(bm->mat.diffTexID){
+    flgmmsBasic* bmesh = mesh->_;
+    flgmmsmtBasic* bmat = mesh->material->_;
+
+    if(bmat->diffTexID && prog->ulMatDiff >= 0){
         glActiveTexture(GL_TEXTURE0);
-        glUniform1i(shaderProgram.ulMatDiff, 0);
-        glBindTexture(GL_TEXTURE_2D, bm->mat.diffTexID);
+        glUniform1i(prog->ulMatDiff, 0);
+        glBindTexture(GL_TEXTURE_2D, bmat->diffTexID);
     }
-    if(bm->mat.specTexID){
+    if(bmat->specTexID && prog->ulMatSpec >= 0){
         glActiveTexture(GL_TEXTURE1);
-        glUniform1i(shaderProgram.ulMatSpec, 1);
-        glBindTexture(GL_TEXTURE_2D, bm->mat.specTexID);
+        glUniform1i(prog->ulMatSpec, 1);
+        glBindTexture(GL_TEXTURE_2D, bmat->specTexID);
     }
 
-    if(bm->mat.shine >= 0 && shaderProgram.ulMatShine >= 0){
-        glUniform1f(shaderProgram.ulMatShine, bm->mat.shine);
+    if(bmat->shine >= 0 && prog->ulMatShine >= 0){
+        glUniform1f(prog->ulMatShine, bmat->shine);
     }
 
-    if(bm->transform_ && shaderProgram.ulModel >= 0){
-        glUniformMatrix4fv(shaderProgram.ulModel, 1, false, bm->transform_->v);
+    if(prog->ulMatClr >= 0){
+        glUniform3f(prog->ulMatClr, bmat->color.x, bmat->color.y, bmat->color.z);
     }
-    if(bm->colorEnabled && shaderProgram.ulClr >= 0){
-        glUniform3f(shaderProgram.ulClr, bm->color.x, bm->color.y, bm->color.z);
+
+    if(mesh->transform && prog->ulModel >= 0){
+        glUniformMatrix4fv(prog->ulModel, 1, false, flmhmtValuePtr(*mesh->transform));
     }
     
-    glBindVertexArray(bm->vaoID);
-    glDrawElements(GL_TRIANGLES, bm->indexesLen, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(bmesh->vaoID);
+    glDrawElements(GL_TRIANGLES, bmesh->indexesLen, GL_UNSIGNED_INT, 0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(0);
 }
 
+static bool flgmmsbsVtxdIsSupported(uint8_t flags){
+    switch(flags){
+        case flgmmsbsVTXD_POS:
+        case flgmmsbsVTXD_POS|flgmmsbsVTXD_NORM:
+        case flgmmsbsVTXD_POS|flgmmsbsVTXD_TEXCOORD:
+        case flgmmsbsVTXD_POS|flgmmsbsVTXD_NORM|flgmmsbsVTXD_TEXCOORD:
+            return true;
+        default:
+            return false;
+    }
+}
 
+static GLuint flgmmsbsGetIndex(uint8_t vtxdFlags, uint8_t targetFlag, GLuint vtxCount){
+    switch(vtxdFlags){
+        case flgmmsbsVTXD_POS:
+            break;
+        case flgmmsbsVTXD_POS|flgmmsbsVTXD_NORM:
+        case flgmmsbsVTXD_POS|flgmmsbsVTXD_TEXCOORD:
+            if(targetFlag != flgmmsbsVTXD_POS) return 3*vtxCount;
+            break;
+        
+        case flgmmsbsVTXD_POS|flgmmsbsVTXD_NORM|flgmmsbsVTXD_TEXCOORD:
+            if(targetFlag == flgmmsbsVTXD_NORM) return 3*vtxCount;
+            if(targetFlag == flgmmsbsVTXD_TEXCOORD) return (3*2)*vtxCount;
+            break;
+    }
 
-flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, uint8_t vtxdFlags){
-    if(!flgmbmVtxdIsSupported(vtxdFlags)) return NULL;
+    return 0;
+}
+
+static GLuint flgmmsbsGetVtxdLen(uint8_t vtxdFlags, GLuint vtxCount){
+    GLuint activeFlagsFloatCount = 0;
+    if(vtxdFlags & flgmmsbsVTXD_POS) activeFlagsFloatCount += 3;
+    if(vtxdFlags & flgmmsbsVTXD_NORM) activeFlagsFloatCount += 3;
+    if(vtxdFlags & flgmmsbsVTXD_TEXCOORD) activeFlagsFloatCount += 2;
+
+    return activeFlagsFloatCount * vtxCount;
+}
+
+//->flgmmsRectangle
+//==========================================================================================
+flgmMesh* flgmmsbsRectangleNew(GLuint w, GLuint h, uint8_t vtxdFlags){
+    if(!flgmmsbsVtxdIsSupported(vtxdFlags)) return NULL;
 
     //Setup vertices for a rectangle centre about the origin of the x-y plane
     #define _fltShVtxCount 4
@@ -252,14 +331,14 @@ flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, uint8_t vtxdFlags){
     //Write all vertex data into $shVtxd
     //------------------------------------
         //position data
-    if(vtxdFlags & flgmbmVTXD_POS){
+    if(vtxdFlags & flgmmsbsVTXD_POS){
         memcpy(shVtxd, shVtxs, sizeof(shVtxs));
     }
         //normal data
     //Vertex normals will be automatically computed
 
         //texture coordinate
-    if(vtxdFlags & flgmbmVTXD_TEXCOORD){
+    if(vtxdFlags & flgmmsbsVTXD_TEXCOORD){
         //Setup texture coordinate for rectangle using openGL texture coordinate system
         GLfloat shTexCoords[_fltShVtxCount*2/*floats per texture coord*/] = {
             1, 1, //top right corner vertex
@@ -267,18 +346,20 @@ flgmBasicMesh* flgmbmNewRectangle(GLuint w, GLuint h, uint8_t vtxdFlags){
             0, 0, //bottom left corner vertex
             1, 0  //bottom right corner vertex
         };
-        memcpy(shVtxd+flgmbmGetIndex(vtxdFlags, flgmbmVTXD_TEXCOORD, _fltShVtxCount),
+        memcpy(shVtxd+flgmmsbsGetIndex(vtxdFlags, flgmmsbsVTXD_TEXCOORD, _fltShVtxCount),
             shTexCoords, sizeof(shTexCoords));
     }
     //--
 
-    return flgmbmNew(shVtxd, flgmbmGetVtxdLen(vtxdFlags, _fltShVtxCount), _fltShVtxCount,
+    return flgmmsbsNewDU(shVtxd, flgmmsbsGetVtxdLen(vtxdFlags, _fltShVtxCount), _fltShVtxCount,
     vtxdFlags, shIndexes, sizeof(shIndexes)/sizeof(*shIndexes), false);
 
     #undef _fltShVtxCount
 }
 
-flgmBasicMesh* flgmbmNewBox(GLuint w, GLuint h, GLuint b){
+//->flgmmsBox
+//==========================================================================================
+flgmMesh* flgmmsbsBoxNew(GLuint w, GLuint h, GLuint b){
     //Setup vertices for a box centre about the origin(openGL RHS) such that:
     //w is along the x-axis, h is along the y-axis, b is along the z-axis
     #define _fltShVtxCount 24
@@ -336,45 +417,46 @@ flgmBasicMesh* flgmbmNewBox(GLuint w, GLuint h, GLuint b){
         //normal data
     //Vertex normals will be automatically computed
 
-    uint8_t vtxdFlags = flgmbmVTXD_POS|flgmbmVTXD_NORM;
-    return flgmbmNew(shVtxd, flgmbmGetVtxdLen(vtxdFlags, _fltShVtxCount), _fltShVtxCount,
+    uint8_t vtxdFlags = flgmmsbsVTXD_POS|flgmmsbsVTXD_NORM;
+    return flgmmsbsNewDU(shVtxd, flgmmsbsGetVtxdLen(vtxdFlags, _fltShVtxCount), _fltShVtxCount,
     vtxdFlags, shIndexes, sizeof(shIndexes)/sizeof(*shIndexes), false);
 
     #undef _fltShVtxCount
 }
 
-void* flgmComputeVertexNormal(
-    const GLfloat* vtxs, GLuint vtxsStride, GLfloat* normDest, GLuint normDestStride, 
-    const GLuint* indexes, GLuint indexesLen  ){
-    //check if data is tightly packed
-    if(!vtxsStride) vtxsStride = 3;//floats
-    if(!normDestStride) normDestStride = 3;//floats
+//->flgmmsMaterial
+//==========================================================================================
+static flutImplNew(flgmmsmtNew, flgmmsMaterial, flgmmsmt_)
 
-    //Clear $normDest buffer before computing normals
-    for(GLuint i = 0; i<indexesLen; i++){
-        * ((Vector3*)(normDest+indexes[i]*normDestStride) ) = Vector3Zero();
-    }
+void flgmmsmtFree(flgmmsMaterial* mat){
+    if(!mat) return;
+    if(mat->_free) mat->_free(mat);
+    flmmFree(mat);
+}
 
-    //Loop through each triangle(3 indexes that form a face)
-    for(GLuint i = 0; i<indexesLen; i += 3){
-        //Get handle to the 3 vertexes of the triangle
-        const Vector3* p0 = (const Vector3*)(vtxs+indexes[i+0]*vtxsStride);
-        const Vector3* p1 = (const Vector3*)(vtxs+indexes[i+1]*vtxsStride);
-        const Vector3* p2 = (const Vector3*)(vtxs+indexes[i+2]*vtxsStride);
-        //Compute the triangle normal using p0, p1 and p2
-        Vector3 tnorm = Vector3CrossProduct(Vector3Subtract(*p1, *p0), Vector3Subtract(*p2, *p0));
-        //Update the corresponding normals of the vertexes in $normDest
-        *( (Vector3*)(normDest+indexes[i+0]*normDestStride) ) = Vector3Add(
-                *(Vector3*)(normDest+indexes[i+0]*normDestStride), tnorm  );
-        *( (Vector3*)(normDest+indexes[i+1]*normDestStride) ) = Vector3Add(
-                *(Vector3*)(normDest+indexes[i+1]*normDestStride), tnorm  );
-        *( (Vector3*)(normDest+indexes[i+2]*normDestStride) ) = Vector3Add(
-                *(Vector3*)(normDest+indexes[i+2]*normDestStride), tnorm  );
-    }
+//->flgmmsmtBasic
+//==========================================================================================
+flgmmsMaterial* flgmmsmtbsNew(GLuint diffTexID, GLuint specTexID, GLint shine, flmhVector3 clrRGB){
+    flgmmsmtBasic* bsMat = flmmMalloc(sizeof(flgmmsmtBasic));
+    if(!bsMat) return NULL;
 
-    //Normalize computed normals in $normDest buffer
-    for(GLuint i = 0; i<indexesLen; i++){
-        *( (Vector3*)(normDest+indexes[i]*normDestStride) ) = Vector3Normalize(
-                *(Vector3*)(normDest+indexes[i]*normDestStride)  );
+    *bsMat = (flgmmsmtBasic){flgmmsmtbs_, 
+        .diffTexID = diffTexID, .specTexID = specTexID, .shine = shine, .color = clrRGB};
+
+    flgmmsMaterial* mat = flgmmsmtNew();
+    if(!mat){
+        flmmFree(bsMat);
+        return NULL;
     }
+    mat->_ = bsMat;
+    mat->_free = flgmmsmtbsFree;
+
+    return mat;
+}
+
+static void flgmmsmtbsFree(flgmmsMaterial* mat){
+    if(!mat->_) return;
+
+    flmmFree(mat->_);
+    mat->_ = NULL;
 }

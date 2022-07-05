@@ -2,18 +2,18 @@
 
 in vec2 fragTexCoord;
 
-struct BmMat{
+struct BsMat{
     sampler2D diffTex;
     sampler2D specTex;
     float shine;
+    vec3 clr;
 };
 
-uniform BmMat uMat;
-uniform vec3 uMeshClr;
+uniform BsMat uMat;
 
 out vec4 fragClr;
 
 void main(){
     fragClr = texture(uMat.diffTex, fragTexCoord);
-    fragClr += 0.2*vec4(uMeshClr, 1.0);
+    fragClr += 0.2*vec4(uMat.clr, 1.0);
 }

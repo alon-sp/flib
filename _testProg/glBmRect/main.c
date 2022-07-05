@@ -35,7 +35,7 @@ int main(int argc, const char** argv){
     }
 
     // float tmp[3] = {0.1, 0.2, 0.3};
-    // Vector3 tmpS = *(Vector3*)tmp;
+    // flmhVector3 tmpS = *(flmhVector3*)tmp;
     // printf("\ntmps: %f, %f, %f", tmpS.x, tmpS.y, tmpS.z);
 
     //Perform cleanup operations
@@ -56,7 +56,7 @@ static const char* fsPathGL = "../../../_testProg/glBmRect/fs.glsl";
 static const char* tex1PathGL = "../../../_testProg/res/images/awesomeface.png";
 static GLuint tex1GL;
 static flglShaderProgram progGL;
-flgmBasicMesh* bmesh;
+flgmMesh* bmesh;
 
 bool glpInit(){
 
@@ -76,14 +76,13 @@ bool glpInit(){
     tex1GL = flglGenTextureFromFile(tex1PathGL, &errlog);
     if(!tex1GL) _printfErrlogAndExit(errlog);
 
-    bmesh = flgmbmNewRectangle(1, 1, flgmbmVTXD_POS|flgmbmVTXD_TEXCOORD);
+    bmesh = flgmmsbsRectangleNew(1, 1, flgmmsbsVTXD_POS|flgmmsbsVTXD_TEXCOORD);
     if(!bmesh){
         printf("\nFailed to create bmesh");
         return false;
     }
-    flgmbmSetColor(bmesh, ((Vector3){1, 0, 0}));
     
-    bmesh->mat = (flgmbmMat){.diffTexID = tex1GL, .specTexID = 0, .shine = -1};
+    bmesh->material = flgmmsmtbsNew(tex1GL, 0, -1, (flmhVector3){1, 0, 0});
 
     //glViewport(0, 0, glpWindowWidth, glpWindowHeight);
 
@@ -95,7 +94,7 @@ void glpRender(){
 
     glUseProgram(progGL.id);
     
-    flgmbmDraw(bmesh, progGL);
+    flgmmsDraw(bmesh, &progGL);
 
     glUseProgram(0);
 }
@@ -111,7 +110,7 @@ void glpCleanup(){
     }
 
     if(bmesh){
-        flgmbmFree(bmesh);
+        flgmmsFree(bmesh);
         bmesh = NULL;
     }
 }

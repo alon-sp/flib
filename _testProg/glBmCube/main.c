@@ -91,8 +91,8 @@ int main(int argc, const char** argv){
 static const char* vsPathGL = "../../../_testProg/glBmCube/vs.glsl";
 static const char* fsPathGL = "../../../_testProg/glBmCube/fs.glsl";
 static flglShaderProgram progGL;
-static flgmBasicMesh *boxMesh;
-static Matrix proj;
+static flgmMesh *boxMesh;
+static flmhMatrix proj;
 static flmhOrthonormalBasis view;
 static GLint ulLightDir, ulLightClr;
 
@@ -111,23 +111,21 @@ bool glpInit(){
     if(!progGL.id) _printfErrlogAndExit(errlog);
 
     //initialize box mesh
-    boxMesh = flgmbmNewBox(1, 1, 1);
+    boxMesh = flgmmsbsBoxNew(1, 1, 1);
     if(!boxMesh){
         printf("\nFailed to create box");
         return false;
     }
-    boxMesh->mat = (flgmbmMat){.diffTexID = 0, .specTexID = 0, .shine = 8};
-    float16 boxModellv = MatrixToFloatV(MatrixIdentity());
-    flgmbmSetTransform(boxMesh, &boxModellv, true);
-    flgmbmSetColor(boxMesh, ((Vector3){0.6, 0.6, 0.6}));
+    boxMesh->material = flgmmsmtbsNew(0, 0, 8, (flmhVector3){0.6, 0.6, 0.6});
+    flmhMatrix boxTransf = flmhmtIdentity();
+    flgmmsSetTransform(boxMesh, &boxTransf, true);
 
     //Setup view matrix
 
-    flmhobCopy( (flmhOrthonormalBasis*)&view, 
-        flmhobNewPTU( (Vector3){0, 0, 3}, (Vector3){0, 0, 0}, (Vector3){0, 1, 0})  );
+    view = flmhobNewPTU( (flmhVector3){0, 0, 3}, (flmhVector3){0, 0, 0}, (flmhVector3){0, 1, 0});
 
     //setup projection matrix
-    proj = MatrixPerspective(DEG2RAD*45, glpWindowWidth/(float)glpWindowHeight, 0.1, 100);
+    proj = flmhmtPerspective(DEG2RAD*45, glpWindowWidth/(float)glpWindowHeight, 0.1, 100);
 
     ulLightDir = glGetUniformLocation(progGL.id, "uLightDir");
     ulLightClr = glGetUniformLocation(progGL.id, "uLightClr");
@@ -139,11 +137,10 @@ bool glpInit(){
     return true;
 }
 
-static void drawBox(Matrix transf, Vector3 color){
-    float16 transfV = MatrixToFloatV(transf);
-    flgmbmSetTransform(boxMesh, &transfV, false);
-    flgmbmSetColor(boxMesh, color);
-    flgmbmDraw(boxMesh, progGL);
+static void drawBox(flmhMatrix transf, flmhVector3 color){
+    flgmmsSetTransform(boxMesh, &transf, false);
+    flgmmsmtbs(boxMesh->material)->color = color;
+    flgmmsDraw(boxMesh, &progGL);
 }
 
 void glpRender(float dt){
@@ -157,21 +154,22 @@ void glpRender(float dt){
     if(dirUD) flmhobOrbitUD(&view, 3, dirUD*dt*60*DEG2RAD);
     if(dirLR) flmhobOrbitLR(&view, 3, dirLR*dt*60*DEG2RAD);
 
-    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, flmhobGetViewTransform(&view));
-    glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, MatrixToFloat(proj));
+    flmhMatrix vtransf = flmhobGetViewTransform(&view);
+    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, (float*)&vtransf);
+    glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, flmhmtValuePtr(proj));
     
     glUniform3f(ulLightDir, view.z.x, view.z.y, view.z.z);
     glUniform3f(ulLightClr, 1, 1, 1);
     
     //Draw brown box
-    drawBox(MatrixMultiply(MatrixScale(2, 1.0f/64, 2), MatrixTranslate(0, -0.6, 0)), (Vector3){0.6471, 0.3216, 0.1765});
+    drawBox(MatrixMultiply(MatrixScale(2, 1.0f/64, 2), MatrixTranslate(0, -0.6, 0)), (flmhVector3){0.6471, 0.3216, 0.1765});
     //Draw blue box
-    drawBox(MatrixMultiply(MatrixScale(1.0f/32, 0.5f/64, 2), MatrixTranslate(-1, -0.6, 0)), (Vector3){0, 0, 0.5});
+    drawBox(MatrixMultiply(MatrixScale(1.0f/32, 0.5f/64, 2), MatrixTranslate(-1, -0.6, 0)), (flmhVector3){0, 0, 0.5});
     //Draw green box
-    drawBox(MatrixMultiply(MatrixScale(2, 0.5f/64, 1.0f/32), MatrixTranslate(0, -0.6, 1)), (Vector3){0, 0.5, 0});
+    drawBox(MatrixMultiply(MatrixScale(2, 0.5f/64, 1.0f/32), MatrixTranslate(0, -0.6, 1)), (flmhVector3){0, 0.5, 0});
 
     //Draw grey box
-    drawBox(MatrixIdentity(), (Vector3){0.6, 0.6, 0.6});
+    drawBox(MatrixIdentity(), (flmhVector3){0.6, 0.6, 0.6});
 
     const char* errstr;
     if(errstr = flglGetError()){
@@ -188,7 +186,7 @@ void glpCleanup(){
     }
 
     if(boxMesh){
-        flgmbmFree(boxMesh);
+        flgmmsFree(boxMesh);
         boxMesh = NULL;
     }
 

@@ -172,11 +172,11 @@ static void flglspSetupUniforms(flglShaderProgram* sp){
     sp->ulMatDiff = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATDIFF);
     sp->ulMatSpec = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSPEC);
     sp->ulMatShine = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_MATSHINE);
-    sp->ulClr = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_CLR);
+    sp->ulMatClr = glGetUniformLocation(sp->id, FLGL_UNIFORM_NAME_CLR);
 }
 
 flglShaderProgram flglspNew(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD){
-    flglShaderProgram sp = flglspInit();
+    flglShaderProgram sp = (flglShaderProgram){flglShaderProgram_};
     GLuint progGL = flglCreateProgramFromSrc(vertexShaderSrc, fragShaderSrc, errlogPD);
     if(progGL){
         sp.id = progGL;
@@ -187,7 +187,7 @@ flglShaderProgram flglspNew(const GLchar* vertexShaderSrc, const GLchar* fragSha
 }
 
 flglShaderProgram flglspNewFromFile(const GLchar* vertexShaderPath, const GLchar* fragShaderPath, flLog** errlogPD){
-    flglShaderProgram sp = flglspInit();
+    flglShaderProgram sp = (flglShaderProgram){flglShaderProgram_};
     GLuint progGL = flglCreateProgramFromFile(vertexShaderPath, fragShaderPath, errlogPD);
     if(progGL){
         sp.id = progGL;

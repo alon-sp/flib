@@ -8,6 +8,10 @@
 #include"flArray.h"
 #include"fllog.h"
 
+#define flmmMalloc(nbytes) flmemMalloc(nbytes)
+#define flmmFree(ptr) flmemFree(ptr)
+#define flmmRealloc(mptr, nbytes) flmemRealloc(mptr, nbytes)
+
 void* flmemMalloc(flint_t nbytes);
 
 void flmemFree(void* mptr);
@@ -26,5 +30,13 @@ void flerrHandle(const char* errstr);
 
 /*----------utilities----------*/
 #define flcopSet(cop, copValue, copType) ( *(copType*)&(cop) = copValue )
+
+#define flutImplNew(funcName, objType, objType_)\
+objType* funcName(){\
+    objType* obj = flmmMalloc(sizeof(objType));\
+    if(!obj) return NULL;\
+    *obj = (objType){objType_};\
+    return obj;\
+}
 
 #endif//FLHEADERH_INCLUDED

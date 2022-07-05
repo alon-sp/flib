@@ -6,27 +6,68 @@
 #include"flmh.h"
 #include"flgl.h"
 
-/*========================================Basic Mesh========================================*/
-//-------------------------------------------------------------------------------------------
+typedef struct flgmmsMaterial flgmmsMaterial;
 
-typedef struct flgmbmMat flgmbmMat;
-struct flgmbmMat{
+//->flgm
+//==========================================================================================
+void* flgmComputeVertexNormal(
+    const GLfloat* vtxs, GLuint vtxsStride, GLfloat* normDest, GLuint normDestStride, 
+    const GLuint* indexes, GLuint indexesLen  );
+
+//->flgmMesh
+//==========================================================================================
+typedef struct flgmMesh flgmMesh;
+struct flgmMesh{
+    void (*_free)(flgmMesh* mesh);
+    void (*_draw)(flgmMesh* mesh, flglShaderProgram* shaderProgram);
+
+    flmhMatrix* transform;
+    flmhMatrix* _transfc;//If not NULL, content is a copy of the transform set by the user
+
+    flgmmsMaterial* material;
+
+    void* _;
+};
+#define flgmms_ ._free = NULL, ._draw = NULL, .transform = NULL,\
+                ._transfc = NULL, .material = NULL, ._ = NULL
+void flgmmsFree(flgmMesh* mesh);
+
+void flgmmsSetTransform(flgmMesh* bm, flmhMatrix* transform, bool saveCopy);
+
+#define flgmmsDraw(mesh, shaderProgram) mesh->_draw(mesh, shaderProgram)
+
+//->flgmmsMaterial
+//==========================================================================================
+struct flgmmsMaterial{
+    void* _;
+    void (*_free)(flgmmsMaterial* mat);
+};
+#define flgmmsmt_ ._free = NULL, ._ = NULL
+void flgmmsmtFree(flgmmsMaterial* mat);
+
+//->flgmmsmtBasic
+//==========================================================================================
+typedef struct flgmmsmtBasic flgmmsmtBasic;
+struct flgmmsmtBasic{
+    #define flgmmsmtbs(mat) ((flgmmsmtBasic*)mat->_)
     GLuint diffTexID;
     GLuint specTexID;   
     GLint shine;
+    flmhVector3 color;
 };
-#define flgmbmMatInit() { .diffTexID = 0, .specTexID = 0, .shine = -1 };
+#define flgmmsmtbs_ .diffTexID = 0, .specTexID = 0, .shine = -1
 
-#define flgmbmVTXD_POS       ( (uint8_t)1  )
-#define flgmbmVTXD_NORM      ( (uint8_t)2  )
-#define flgmbmVTXD_TEXCOORD  ( (uint8_t)64 )
+flgmmsMaterial* flgmmsmtbsNew(GLuint diffTexID, GLuint specTexID, GLint shine, flmhVector3 clrRGB);
 
-#define flgmbmTYPE_NIL         0
-#define flgmbmTYPE_RECTANGLE   1
-#define flgmbmTYPE_CUBE        2
+//->flgmmsBasic
+//==========================================================================================
+#define flgmmsbsVTXD_POS       ( (uint8_t)1  )
+#define flgmmsbsVTXD_NORM      ( (uint8_t)2  )
+#define flgmmsbsVTXD_TEXCOORD  ( (uint8_t)64 )
 
-typedef struct flgmBasicMesh flgmBasicMesh;
-struct flgmBasicMesh{
+typedef struct flgmmsBasic flgmmsBasic;
+struct flgmmsBasic{
+    #define flgmmsbs(mesh) ((flgmmsBasic*)mesh->_)
     /**
      * @brief An array of vertex data: [Position, normal, texture coordinate and color, ...]
      * The flag associated with each data provided must be set in the $.vtxdFlags
@@ -35,11 +76,11 @@ struct flgmBasicMesh{
      * and so on.
      */
     const GLfloat* const vtxd;
-    #define _flgmbmGetVtxd(bm) ( (GLfloat*)(bm)->vtxd )
+    #define _flgmmsbsGetVtxd(bm) ( (GLfloat*)(bm)->vtxd )
     const GLuint vtxdLen;
     const GLuint vtxCount;
     const uint8_t vtxdFlags;
-    #define _flgmbmSetVtxd(bm, vertexData, vertexDataLen, vertexCount, flags) do{\
+    #define _flgmmsbsSetVtxd(bm, vertexData, vertexDataLen, vertexCount, flags) do{\
         *( (GLfloat**)&(bm)->vtxd ) = (GLfloat*)(vertexData);\
         *( (GLuint*)&(bm)->vtxdLen ) = (vertexDataLen);\
         *( (GLuint*)&(bm)->vtxCount ) = (vertexCount);\
@@ -47,71 +88,36 @@ struct flgmBasicMesh{
     }while(0)
 
     const GLuint* const indexes;
-    #define _flgmbmGetIndexes(bm) ( (GLuint*)(bm)->indexes )
+    #define _flgmmsbsGetIndexes(bm) ( (GLuint*)(bm)->indexes )
     const GLuint indexesLen;
-    #define _flgmbmSetIndexes(bm, _indexes, _indexesLen) do{\
+    #define _flgmmsbsSetIndexes(bm, _indexes, _indexesLen) do{\
         *( (GLuint**)&(bm)->indexes ) = (GLuint*)(_indexes);\
         *( (GLuint*)&(bm)->indexesLen ) = (_indexesLen);\
     }while(0)
 
-    const float16* transform_;//The underscore implies the memory associated with this pointer
-                            //is not managed by this module.
-    #define _flgmbmSetTransform(bm, transf)\
-        (  *( (float16**)&(bm)->transform_ ) = (float16*)(transf)  )
-
-    const float16* const _transformBuf;
-    #define _flgmbmSetTransformBuf(bm, transfBuf) \
-        (  *( (float16**)&(bm)->_transformBuf ) = (float16*)(transfBuf)  )
-
-    const GLint type;//The type of mesh: any of flgmbmTYPE_* constants
-    #define _flgmbmSetType(bm, _type) (  *( (GLint*)&(bm)->type ) = (_type)  )
-
-    const Vector3 color;/*rgb*/
-    const bool colorEnabled;
-    #define _flgmbmSetColorEnabled(bm, bval) (  *( (bool*)&(bm)->colorEnabled ) = (bval)  )
-
-
-    flgmbmMat mat;
 
     const GLuint vboID;
-    #define flgmbmSetVboID(bm, _vboID) ( *( (GLuint*)&(bm)->vboID ) = (_vboID) )
+    #define flgmmsbsSetVboID(bm, _vboID) ( *( (GLuint*)&(bm)->vboID ) = (_vboID) )
 
     const GLuint iboID;
-    #define flgmbmSetIboID(bm, _iboID) ( *( (GLuint*)&(bm)->iboID ) = (_iboID) )
+    #define flgmmsbsSetIboID(bm, _iboID) ( *( (GLuint*)&(bm)->iboID ) = (_iboID) )
 
     const GLuint vaoID;
-    #define flgmbmSetVaoID(bm, _vaoID) ( *( (GLuint*)&(bm)->vaoID ) = (_vaoID) )
+    #define flgmmsbsSetVaoID(bm, _vaoID) ( *( (GLuint*)&(bm)->vaoID ) = (_vaoID) )
 
 };
 
-flgmBasicMesh* flgmbmNewBU(  
+flgmMesh* flgmmsbsNew(  
     GLfloat* vertexData, const GLuint vertexDataLen, GLuint vertexCount, uint8_t vtxdFlags,
      const GLuint* indexes, const GLuint indexesLen, bool saveData, 
      GLenum vboUsage, GLenum iboUsage );
 
-#define flgmbmNew(vertexData, vertexDataLen, vertexCount, vtxdFlags, indexes, indexesLen, saveData)\
-    flgmbmNewBU(  vertexData, vertexDataLen, vertexCount, vtxdFlags, indexes, indexesLen, saveData,\
+#define flgmmsbsNewDU(vertexData, vertexDataLen, vertexCount, vtxdFlags, indexes, indexesLen, saveData)\
+    flgmmsbsNew(  vertexData, vertexDataLen, vertexCount, vtxdFlags, indexes, indexesLen, saveData,\
         saveData? GL_DYNAMIC_DRAW : GL_STATIC_DRAW, GL_STATIC_DRAW )
 
-void flgmbmFree(flgmBasicMesh* bm);
+flgmMesh* flgmmsbsRectangleNew(GLuint w, GLuint h, uint8_t vtxdFlags);
 
-void flgmbmSetTransform(flgmBasicMesh* bm, float16* transform, bool saveCopy);
-#define flgmbmSetColor(bm, clr) do{\
-    _flgmbmSetColorEnabled(bm, true);\
-    *(Vector3*)( &(bm)->color ) = (clr);\
-}while(0)
-
-void flgmbmDraw(flgmBasicMesh* mesh, flglShaderProgram shaderProgram);
-
-//void flgmbmComputeVertexNormals(flgmBasicMesh* mesh);
-
-flgmBasicMesh* flgmbmNewRectangle(GLuint width, GLuint height, uint8_t vtxdFlags);
-flgmBasicMesh* flgmbmNewBox(GLuint width, GLuint height, GLuint breadth);
-
-/*==========================================Utils==========================================*/
-//-------------------------------------------------------------------------------------------
-void* flgmComputeVertexNormal(
-    const GLfloat* vtxs, GLuint vtxsStride, GLfloat* normDest, GLuint normDestStride, 
-    const GLuint* indexes, GLuint indexesLen  );
+flgmMesh* flgmmsbsBoxNew(GLuint width, GLuint height, GLuint breadth);
 
 #endif

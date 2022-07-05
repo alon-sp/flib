@@ -28,9 +28,9 @@ static bool _flgmTestComputeVertexNormal(){
     bool status = true;
     
     for(int i = 0; i<vertexCount; i++){
-        status = Vector3CompareEqual(*(Vector3*)(normDest+indices[i]*stride), (Vector3){0.0, 0.0, 1.0});
+        status = flmhv3CompareEqual(*(flmhVector3*)(normDest+indices[i]*stride), (flmhVector3){0.0, 0.0, 1.0});
         if(!status) break;
-        status = Vector2CompareEqual(*(Vector2*)(texCoords+indices[i]*stride), (Vector2){0.0, 0.0});
+        status = flmhv2CompareEqual(*(flmhVector2*)(texCoords+indices[i]*stride), (flmhVector2){0.0, 0.0});
         if(!status)break;
     }
 

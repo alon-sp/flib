@@ -8,6 +8,7 @@ struct BmMat{
     sampler2D diffTex;
     sampler2D specTex;
     float shine;
+    vec3 clr;
 };
 
 uniform BmMat uMat;
@@ -15,7 +16,6 @@ uniform vec3 uLightDir;
 uniform vec3 uLightClr;
 uniform mat4 uModel;
 uniform mat4 uView;
-uniform vec3 uClr;
 
 out vec4 fragCLR;
 
@@ -37,5 +37,5 @@ void main(){
     vec3 lightSpec = spec*uLightClr;
 
     //
-    fragCLR = vec4( uClr*(lightDiff + lightAmb + lightSpec), 1);
+    fragCLR = vec4( uMat.clr*(lightDiff + lightAmb + lightSpec), 1);
 }

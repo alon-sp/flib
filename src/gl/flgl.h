@@ -24,9 +24,9 @@
 #define FLGL_UNIFORM_NAME_MODEL      "uModel"
 #define FLGL_UNIFORM_NAME_VIEW       "uView"
 #define FLGL_UNIFORM_NAME_PROJ       "uProj"
-#define FLGL_UNIFORM_NAME_CLR        "uClr"
-#define FLGL_UNIFORM_NAME_MATDIFF    "uMat.diff"
-#define FLGL_UNIFORM_NAME_MATSPEC    "uMat.spec"
+#define FLGL_UNIFORM_NAME_CLR        "uMat.clr"
+#define FLGL_UNIFORM_NAME_MATDIFF    "uMat.diffTex"
+#define FLGL_UNIFORM_NAME_MATSPEC    "uMat.specTex"
 #define FLGL_UNIFORM_NAME_MATSHINE   "uMat.shine"
 
 /*=========Shader==========*/
@@ -84,11 +84,11 @@ flLog* flglGetProgramInfolog(GLuint program);
 typedef struct flglShaderProgram flglShaderProgram;
 struct flglShaderProgram{
     GLuint id;
-    GLint ulModel, ulView, ulProj, ulClr; //ul -> uniform location
-    GLint ulMatDiff, ulMatSpec, ulMatShine;
+    GLint ulModel, ulView, ulProj; //ul -> uniform location
+    GLint ulMatDiff, ulMatSpec, ulMatShine, ulMatClr;
 };
-#define flglspInit() {  .id = 0, .ulModel = -1, .ulView = -1, .ulProj = -1,\
-    .ulMatDiff = -1, .ulMatSpec = -1, .ulMatShine = -1  }
+#define flglShaderProgram_ .id = 0, .ulModel = -1, .ulView = -1, .ulProj = -1,\
+        .ulMatDiff = -1, .ulMatSpec = -1, .ulMatShine = -1
 
 flglShaderProgram flglspNew(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc, flLog** errlogPD);
 
