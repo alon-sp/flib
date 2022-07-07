@@ -148,8 +148,7 @@ void glpRender(float dt){
 
     flmhobOrbitXZ(&view, 3, dt*60*DEG2RAD);
 
-    flmhMatrix vtransf = flmhobGetViewTransform(&view);
-    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, (float*)&vtransf);
+    glUniformMatrix4fv(progGL.ulView, 1, GL_FALSE, flmhmtValuePtr(flmhobGetViewTransform(&view)));
     glUniformMatrix4fv(progGL.ulProj, 1, GL_FALSE, flmhmtValuePtr(proj));
     
     glUniform3f(ulLightPos, 0, 0.5, 0);
