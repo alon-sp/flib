@@ -1,4 +1,4 @@
-#version 330 core
+#version 300 es
 
 in vec3 aVtxPos;
 in vec3 aVtxClr;

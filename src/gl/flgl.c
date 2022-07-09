@@ -17,7 +17,10 @@ GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, fl
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
 
     if(compileStatus != GL_TRUE){
-        if(errlogPD) *errlogPD = flglGetShaderInfolog(shader);
+        if(errlogPD){
+            *errlogPD = flglGetShaderInfolog(shader);
+            if(!*errlogPD) *errlogPD = fllogNew("ERR_IN");
+        }
         glDeleteShader(shader);
 
         return 0;
@@ -27,12 +30,25 @@ GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, fl
 }
 
 flLog* flglGetShaderInfolog(GLuint shader){
-    GLchar infolog[512];
+    flLog* infolog = NULL;
+    GLchar* infologBuf;
     GLint infologLength;
-    glGetShaderInfoLog(shader, 512-1, &infologLength, infolog);
-    *(infolog+infologLength) = '\0';
+
+    glGetShaderiv ( shader, GL_INFO_LOG_LENGTH, &infologLength );
+    if(infologLength > 1){
+        infologBuf = malloc( (infologLength+1)*sizeof(GLchar) );
+        if(infologBuf){
+            glGetShaderInfoLog(shader, infologLength, NULL, infologBuf);
+            *(infologBuf+infologLength) = '\0';
+
+            infolog = fllogNew(infologBuf);
+
+            free(infologBuf);
+        }
+        
+    }
     
-    return fllogNew(infolog);
+    return infolog;
 }
 
 bool flglLinkProgram(GLuint shaderProgram, GLuint vshader, GLuint fshader, bool deleteShaders, flLog** errlogPD){
