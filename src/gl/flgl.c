@@ -1,6 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include"flgl.h"
+#include<SDL2/SDL_egl.h>
 
 GLuint flglCreateAndCompileShader(GLuint shaderType, const GLchar* shaderSrc, flLog** errlogPD){
     GLuint shader = glCreateShader(shaderType);

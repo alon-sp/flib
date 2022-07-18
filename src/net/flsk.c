@@ -28,7 +28,7 @@ static void flskdvwsAddCon(flSocket* sok, struct flskdvwsConnection con);
 static struct flskdvwsConnection* flskdvwsGetCon(flSocket* sok, flskID_t key);
 
 struct flskdvwsConnection{
-    flskID_t dvKey;
+    flskID_t dvID;
     struct mg_connection* mgCon;
 };
 
@@ -93,7 +93,7 @@ void flskdvwsClosec(flSocket* sok, flskMessage* msg){
         mg_ws_send(c->mgCon, msg->data, msg->dataLen, WEBSOCKET_OP_BINARY);
         
         c->mgCon->is_draining = 1;
-        *c = (struct flskdvwsConnection){.dvKey = 0, .mgCon = NULL};
+        *c = (struct flskdvwsConnection){.dvID = 0, .mgCon = NULL};
     }
 }
 
@@ -134,7 +134,7 @@ static void flskdvwsMgEventCb(struct mg_connection *c, int ev, void *ev_data, vo
         struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 
         flskdvwsAddCon(sok, 
-            (struct flskdvwsConnection){.dvKey = flskGetDeviceKey(sok, wm->data.ptr), .mgCon = c});
+            (struct flskdvwsConnection){.dvID = flskGetDeviceKey(sok, wm->data.ptr), .mgCon = c});
 
         sok->recvCb(sok, (flskMessage){flskMessage_, .data = wm->data.ptr, .dataLen = wm->data.len});
 
@@ -154,16 +154,16 @@ static void flskdvwsAddCon(flSocket* sok, struct flskdvwsConnection con){
             continue;
         }
 
-        if(c->dvKey == con.dvKey){
+        if(c->dvID == con.dvID){
             if(c->mgCon == con.mgCon) return;
             //close the existing connection, the new connection will be added later
             c->mgCon->is_draining = 1;
-            c->mgCon = NULL; c->dvKey = 0;
+            c->mgCon = NULL; c->dvID = 0;
 
             nullIndex = i;
         }else if(c->mgCon == con.mgCon){
             //This should be an error; but for now we will simply update the existing key
-            c->dvKey = con.dvKey;
+            c->dvID = con.dvID;
         }
     }
 
@@ -172,12 +172,12 @@ static void flskdvwsAddCon(flSocket* sok, struct flskdvwsConnection con){
     else flarrPut(dvws->cons, nullIndex, &con);
 }
 
-struct flskdvwsConnection* flskdvwsGetCon(flSocket* sok, flskID_t key){
+struct flskdvwsConnection* flskdvwsGetCon(flSocket* sok, flskID_t deviceID){
     struct flskDVWS_* dvws = sok->_;
 
     for(int i = 0; i < dvws->cons->length; i++){
         struct flskdvwsConnection* c = flarrGet(dvws->cons, i);
-        if(c->mgCon && c->dvKey == key) return c;
+        if(c->mgCon && c->dvID == deviceID) return c;
     }   
 
     return NULL;

@@ -4,10 +4,12 @@
 #include<mongoose.h>
 
 #include"fl.h"
+#include"flskpc.h"
+
+typedef uint32_t flskID_t;
 
 //->flsk
 //==========================================================================================
-typedef uint32_t flskID_t;
 
 typedef struct flskMessage flskMessage;
 typedef struct flSocket flSocket;
@@ -44,9 +46,6 @@ struct flskMessage{
     size_t dataLen;
 };
 #define flskMessage_ ._ = NULL, .data = NULL, .dataLen = 0
-
-#define flskGetDeviceKey(sok, uint8Buffer) ( *(flskID_t*)(uint8Buffer) )
-#define flskGetMsgHeader(sok, uint8Buffer) ( *(flskID_t*)(uint8Buffer+sizeof(flskID_t)) )
 
 //->dvws
 //==========================================================================================
